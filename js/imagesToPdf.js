@@ -24,6 +24,18 @@ if (!dzImgs || !inpImgs) {
   console.warn("⚠️ Missing UI elements for Images→PDF Tool");
 } else {
   wireDrop(dzImgs, inpImgs);
+  
+  // ✅ Convert button - fixed alignment
+  if (btnImgsConvert) {
+    btnImgsConvert.className =
+      "w-full flex items-center justify-center gap-2 sm:gap-3 bg-gradient-to-r from-violet-500 to-purple-600 text-white font-semibold px-4 py-2.5 sm:px-5 sm:py-3 rounded-lg sm:rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all duration-200 text-sm sm:text-base disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100";
+  }
+  
+  // ✅ Reset button - fixed alignment
+  if (btnImgsReset) {
+    btnImgsReset.className =
+      "w-full flex items-center justify-center gap-2 sm:gap-3 bg-gradient-to-r from-gray-400 to-gray-500 text-white font-semibold px-4 py-2.5 sm:px-5 sm:py-3 rounded-lg sm:rounded-xl shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-95 transition-all duration-200 text-sm sm:text-base";
+  }
 
   inpImgs.addEventListener("change", () => {
     const files = Array.from(inpImgs.files || []);
@@ -34,7 +46,7 @@ if (!dzImgs || !inpImgs) {
       return;
     }
     ctrlImgs?.classList.remove("hidden");
-    imgStatus.innerHTML = `<span class="text-blue-600 font-medium">${selectedImages.length}</span> image(s) ready for conversion.`;
+    imgStatus.innerHTML = `<div class="text-center px-2"><span class="text-emerald-500 font-bold text-lg sm:text-xl">${selectedImages.length}</span> <span class="text-gray-700 text-sm sm:text-base">image(s) ready</span></div>`;
     removeDownloadButton();
   });
 
@@ -47,8 +59,8 @@ if (!dzImgs || !inpImgs) {
     if (!PDFDocument) return alert("⚠️ PDF-LIB not loaded. Check your script imports.");
 
     btnImgsConvert.disabled = true;
-    btnImgsConvert.classList.add("opacity-50", "cursor-not-allowed");
-    imgStatus.textContent = "⏳ Converting images to PDF... Please wait.";
+    imgStatus.innerHTML =
+      '<div class="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 text-center px-2"><div class="w-5 h-5 sm:w-6 sm:h-6 border-3 border-violet-500 border-t-transparent rounded-full animate-spin flex-shrink-0"></div><span class="text-violet-600 font-medium text-sm sm:text-base">Converting images... Please wait</span></div>';
 
     const pdfDoc = await PDFDocument.create();
     const margin = Math.max(0, parseInt(imgMargin?.value || "0", 10));
@@ -73,10 +85,9 @@ if (!dzImgs || !inpImgs) {
       }
     }
 
-    let quality = 0.9; // initial image compression quality
+    let quality = 0.9;
     let pdfBlob = null;
 
-    // Try multiple compression rounds until size fits
     for (let attempt = 0; attempt < 6; attempt++) {
       const tempPdf = await PDFDocument.create();
 
@@ -87,9 +98,10 @@ if (!dzImgs || !inpImgs) {
 
         let pdfImage;
         try {
-          pdfImage = compressedBlob.type === "image/jpeg"
-            ? await tempPdf.embedJpg(bytes)
-            : await tempPdf.embedPng(bytes);
+          pdfImage =
+            compressedBlob.type === "image/jpeg"
+              ? await tempPdf.embedJpg(bytes)
+              : await tempPdf.embedPng(bytes);
         } catch (e) {
           console.error(`Failed to embed: ${file.name}`, e);
           continue;
@@ -100,11 +112,15 @@ if (!dzImgs || !inpImgs) {
 
         const iw = pdfImage.width;
         const ih = pdfImage.height;
-        let dw = iw, dh = ih;
+        let dw = iw,
+          dh = ih;
 
         if (sizes[paper]) {
           if (fitMode === "fit") {
-            const scale = Math.min((pw - margin * 2) / iw, (ph - margin * 2) / ih);
+            const scale = Math.min(
+              (pw - margin * 2) / iw,
+              (ph - margin * 2) / ih
+            );
             dw = iw * scale;
             dh = ih * scale;
           } else if (fitMode === "stretch") {
@@ -117,14 +133,25 @@ if (!dzImgs || !inpImgs) {
         const y = (ph - dh) / 2;
         page.drawImage(pdfImage, { x, y, width: dw, height: dh });
 
-        imgStatus.innerHTML = `🖼️ Processing <span class="font-semibold">${i + 1}</span> / ${selectedImages.length}`;
+        const percentage = Math.round(((i + 1) / selectedImages.length) * 100);
+        imgStatus.innerHTML = `
+          <div class="space-y-2 px-3 sm:px-4 w-full max-w-md mx-auto">
+            <div class="flex items-center justify-center gap-2 text-sm sm:text-base">
+              <span class="text-violet-600 font-semibold">Processing:</span>
+              <span class="text-gray-700">${i + 1} / ${selectedImages.length}</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2 sm:h-2.5 overflow-hidden">
+              <div class="bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 h-full rounded-full transition-all duration-300" style="width: ${percentage}%"></div>
+            </div>
+          </div>
+        `;
         await nextFrame();
       }
 
       const pdfBytes = await tempPdf.save();
       pdfBlob = new Blob([pdfBytes], { type: "application/pdf" });
 
-      if (!targetBytes) break; // No size control needed
+      if (!targetBytes) break;
 
       const size = pdfBlob.size;
       console.log(`Attempt ${attempt + 1}: ${size / 1024 / 1024} MB`);
@@ -141,13 +168,12 @@ if (!dzImgs || !inpImgs) {
 
     const url = URL.createObjectURL(pdfBlob);
     showDownloadButton(url);
-    imgStatus.innerHTML = "✅ PDF ready to download!";
+    imgStatus.innerHTML =
+      '<div class="flex items-center justify-center gap-2 text-emerald-600 font-semibold text-base sm:text-lg px-2"><svg class="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span class="text-center">PDF ready to download!</span></div>';
     btnImgsConvert.disabled = false;
-    btnImgsConvert.classList.remove("opacity-50", "cursor-not-allowed");
   });
 }
 
-// ---------- Helper: Compress image using <canvas> ----------
 async function compressImage(file, quality = 0.9) {
   const img = await loadImage(file);
   const canvas = document.createElement("canvas");
@@ -171,7 +197,6 @@ function loadImage(file) {
   });
 }
 
-// ---------- UI Helpers ----------
 function resetUI() {
   inpImgs.value = "";
   ctrlImgs?.classList.add("hidden");
@@ -186,11 +211,23 @@ function showDownloadButton(url) {
   btnImgsDownload = document.createElement("a");
   btnImgsDownload.href = url;
   btnImgsDownload.download = `Images_${Date.now()}.pdf`;
-  btnImgsDownload.innerHTML = "⬇️ Download PDF";
+  btnImgsDownload.innerHTML = `
+    <span class="flex items-center justify-center gap-2 sm:gap-3">
+      <svg class="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+      </svg>
+      <span class="text-sm sm:text-base md:text-lg">Download PDF</span>
+    </span>
+  `;
   btnImgsDownload.className =
-    "bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200";
+    "w-full flex items-center justify-center gap-2 sm:gap-3 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white font-bold px-5 py-3 sm:px-6 sm:py-3.5 md:px-8 md:py-4 rounded-lg sm:rounded-xl shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-95 transition-all duration-300 hover:from-emerald-600 hover:via-teal-600 hover:to-cyan-600 animate-fadeIn";
   btnImgsDownload.id = "btn-imgs-download";
-  btnImgsConvert.parentElement.appendChild(btnImgsDownload);
+  
+  const buttonContainer = btnImgsConvert.parentElement;
+  if (buttonContainer) {
+    buttonContainer.appendChild(btnImgsDownload);
+  }
+  
   setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
