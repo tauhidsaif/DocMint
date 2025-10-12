@@ -278,9 +278,12 @@
           <div class="text-xs font-semibold text-emerald-700 hidden sm:block bg-gradient-to-r from-emerald-50 to-green-50 px-4 py-2 rounded-full border border-emerald-200 shadow-sm">
             v0.3 — Smooth + Big PDF ready
           </div>
-          <button id="mobile-show-tools" class="sm:hidden px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 text-white text-sm font-semibold shadow-lg hover:shadow-xl transition-all">
-            Tools
-          </button>
+         <button id="mobile-show-tools" class="sm:hidden px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 text-white text-sm font-semibold shadow-lg hover:shadow-xl transition-all flex items-center gap-2">
+  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+  </svg>
+  Tools
+</button>
         </div>
       </div>
     </header>
@@ -920,6 +923,17 @@
       window.scrollTo({ top: 0, behavior: "smooth" }); // fallback
     }
   });
+
+  // Mobile Tools button - scroll to sidebar
+  const mobileToolsBtn = document.getElementById("mobile-show-tools");
+  if (mobileToolsBtn) {
+    mobileToolsBtn.addEventListener("click", () => {
+      const sidebar = document.querySelector("aside");
+      if (sidebar) {
+        sidebar.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+  }
 
     </script>
 
