@@ -914,23 +914,26 @@
     }
   });
 
-  // Scroll up smoothly to tools section
+  
+// Scroll to top
   scrollTopBtn.addEventListener("click", () => {
-    const toolsSection = document.querySelector("main"); // scrolls till tools start
-    if (toolsSection) {
-      toolsSection.scrollIntoView({ behavior: "smooth", block: "start" });
-    } else {
-      window.scrollTo({ top: 0, behavior: "smooth" }); // fallback
-    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
-  // Mobile Tools button - scroll to sidebar
+// Mobile Tools button - scroll to sidebar with offset for header
   const mobileToolsBtn = document.getElementById("mobile-show-tools");
   if (mobileToolsBtn) {
     mobileToolsBtn.addEventListener("click", () => {
       const sidebar = document.querySelector("aside");
       if (sidebar) {
-        sidebar.scrollIntoView({ behavior: "smooth", block: "start" });
+        const headerHeight = document.querySelector("header").offsetHeight;
+        const sidebarTop = sidebar.getBoundingClientRect().top + window.pageYOffset;
+        const offsetPosition = sidebarTop - headerHeight - 20; // 20px extra spacing
+        
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: "smooth"
+        });
       }
     });
   }
