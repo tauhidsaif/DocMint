@@ -435,107 +435,181 @@
           </div>
 
           <div id="ctrl-imgs" class="hidden mt-8 space-y-5">
-            <div class="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-5 border border-gray-200">
-              <h4 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                </svg>
-                Conversion Settings
-              </h4>
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <label class="flex flex-col gap-2">
-                  <span class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Quality</span>
-                  <input id="img-qual" type="number" min="0.1" max="1" step="0.1" value="0.9" class="border-2 border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 transition-all" />
-                </label>
 
-                <label class="flex flex-col gap-2">
-                  <span class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Margin</span>
-                  <input id="img-margin" type="number" min="0" max="100" value="0" class="border-2 border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 transition-all" />
-                </label>
+<!-- NEW: Individual/Combined PDF Toggle -->
+<div class="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-2xl p-6 border border-amber-200">
+  <h4 class="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+    </svg>
+    Output Mode
+  </h4>
+  
+  <div class="space-y-3">
+    <label class="flex items-center gap-3 p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-amber-400 hover:bg-amber-50 transition-all">
+      <input type="radio" name="pdf-mode" value="combined" id="pdf-mode-combined" checked class="w-5 h-5 text-amber-600 focus:ring-2 focus:ring-amber-400" />
+      <div class="flex-1">
+        <span class="font-semibold text-gray-800 block">Single Combined PDF</span>
+        <span class="text-xs text-gray-600">All images in one PDF file</span>
+      </div>
+    </label>
+    
+    <label class="flex items-center gap-3 p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-amber-400 hover:bg-amber-50 transition-all">
+      <input type="radio" name="pdf-mode" value="individual" id="pdf-mode-individual" class="w-5 h-5 text-amber-600 focus:ring-2 focus:ring-amber-400" />
+      <div class="flex-1">
+        <span class="font-semibold text-gray-800 block">Individual PDFs</span>
+        <span class="text-xs text-gray-600">One PDF per image</span>
+      </div>
+    </label>
+    
+    <!-- NEW: Download method selection (shown only when individual mode is selected) -->
+    <div id="download-method-section" class="hidden pl-8 space-y-2">
+      <p class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Download Method:</p>
+      
+      <label class="flex items-center gap-3 p-3 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-amber-300 hover:bg-amber-50 transition-all">
+        <input type="radio" name="download-method" value="separate" id="download-separate" checked class="w-4 h-4 text-amber-600 focus:ring-2 focus:ring-amber-400" />
+        <div class="flex-1">
+          <span class="font-medium text-gray-800 text-sm block">Download Separately</span>
+          <span class="text-xs text-gray-500">Each PDF downloads individually</span>
+        </div>
+      </label>
+      
+      <label class="flex items-center gap-3 p-3 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-amber-300 hover:bg-amber-50 transition-all">
+        <input type="radio" name="download-method" value="zip" id="download-zip" class="w-4 h-4 text-amber-600 focus:ring-2 focus:ring-amber-400" />
+        <div class="flex-1">
+          <span class="font-medium text-gray-800 text-sm block">Download as ZIP</span>
+          <span class="text-xs text-gray-500">All PDFs in one ZIP file</span>
+        </div>
+      </label>
+    </div>
+  </div>
+</div>             
 
-                <label class="flex flex-col gap-2">
-                  <span class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Paper Size</span>
-                  <select id="img-page" class="border-2 border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 transition-all">
-                    <option value="A4">A4</option>
-                    <option value="A3">A3</option>
-                    <option value="Letter">Letter</option>
-                    <option value="Legal">Legal</option>
-                    <option value="Auto">Auto (Image size)</option>
-                  </select>
-                </label>
+<script>
+  // Show/hide download method options based on PDF mode
+  const pdfModeRadios = document.querySelectorAll('input[name="pdf-mode"]');
+  const downloadMethodSection = document.getElementById('download-method-section');
+  
+  pdfModeRadios.forEach(radio => {
+    radio.addEventListener('change', () => {
+      if (radio.value === 'individual' && radio.checked) {
+        downloadMethodSection.classList.remove('hidden');
+      } else {
+        downloadMethodSection.classList.add('hidden');
+      }
+    });
+  });
+</script>
+         
+<!-- Paper Size & Fit Mode Settings -->
+<div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200">
+  <h4 class="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+    </svg>
+    Page Settings
+  </h4>
+  
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- Paper Size -->
+    <div>
+      <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide block mb-2">Paper Size</label>
+      <select id="img-page" class="w-full border-2 border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition-all">
+        <option value="Auto">Auto (Image Size)</option>
+        <option value="A4" selected>A4</option>
+        <option value="A3">A3</option>
+        <option value="Letter">Letter</option>
+        <option value="Legal">Legal</option>
+      </select>
+    </div>
+    
+    <!-- Fit Mode -->
+    <div>
+      <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide block mb-2">Fit Mode</label>
+      <select id="img-fitmode" class="w-full border-2 border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition-all">
+        <option value="fit" selected>Fit (Maintain Ratio)</option>
+        <option value="stretch">Stretch (Fill Page)</option>
+      </select>
+    </div>
+  </div>
+</div>
 
-                <label class="flex flex-col gap-2">
-                  <span class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Fit Mode</span>
-                  <select id="img-fitmode" class="border-2 border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 transition-all">
-                    <option value="fit">Fit</option>
-                    <option value="stretch">Stretch</option>
-                  </select>
-                </label>
-              </div>
-            </div>
+<!-- PDF Size Options -->
+<div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
+  <h4 class="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+    </svg>
+    File Size Options
+  </h4>
+  
+  <div class="space-y-3">
+    <!-- Original Size Option -->
+    <label class="flex items-center gap-3 p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all">
+      <input type="radio" name="size-mode" value="original" id="size-mode-original" checked class="w-5 h-5 text-blue-600 focus:ring-2 focus:ring-blue-400" />
+      <div class="flex-1">
+        <span class="font-semibold text-gray-800 block">Keep Original Size</span>
+        <span class="text-xs text-gray-600">Maintain image quality and dimensions</span>
+      </div>
+    </label>
+    
+    <!-- Desired Size Option -->
+    <label class="flex items-center gap-3 p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all">
+      <input type="radio" name="size-mode" value="desired" id="size-mode-desired" class="w-5 h-5 text-blue-600 focus:ring-2 focus:ring-blue-400" />
+      <div class="flex-1">
+        <span class="font-semibold text-gray-800 block">Reduce to Target Size</span>
+        <span class="text-xs text-gray-600">Compress to specific file size</span>
+      </div>
+    </label>
+    
+    <!-- Target Size Input (shown when "Reduce" is selected) -->
+    <div id="desired-size-group" class="hidden pl-8 pr-4 pb-2">
+      <div class="flex items-center gap-2">
+        <input id="desired-size" type="number" min="0.1" step="0.1" placeholder="e.g., 2" class="border-2 border-gray-300 rounded-lg p-2.5 w-24 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all" />
+        <select id="desired-unit" class="border-2 border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all">
+          <option value="MB">MB</option>
+          <option value="KB">KB</option>
+        </select>
+        <span class="text-sm text-gray-600">Target file size</span>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="img-status" class="status-box text-sm text-gray-700 rounded-xl p-4 mb-5"></div>
 
-            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-200">
-              <h4 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
-                </svg>
-                Size Settings
-              </h4>
-              <div class="flex flex-wrap items-end gap-4">
-                <label class="flex flex-col gap-2">
-                  <span class="text-xs font-semibold text-gray-700 uppercase tracking-wide">PDF Size Mode</span>
-                  <select id="size-mode" class="border-2 border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all">
-                    <option value="original">Keep Original Size</option>
-                    <option value="desired">Desired Size</option>
-                  </select>
-                </label>
-
-                <div id="desired-size-group" class="flex items-end gap-2 hidden">
-                  <label class="flex flex-col gap-2">
-                    <span class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Target Size</span>
-                    <input id="desired-size" type="number" min="0.1" step="0.1" placeholder="Enter size" class="border-2 border-gray-300 rounded-lg p-2.5 w-32 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all" />
-                  </label>
-                  <select id="desired-unit" class="border-2 border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all">
-                    <option value="MB">MB</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div class="flex gap-3">
-              <button id="btn-imgs-convert" class="btn-primary bg-gradient-to-r from-emerald-500 to-green-600 text-white px-8 py-3 rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 font-semibold text-base flex items-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                </svg>
-                Convert to PDF
-              </button>
-              <button id="btn-imgs-reset" class="border-2 border-gray-300 px-8 py-3 rounded-xl hover:bg-gray-100 hover:border-gray-400 transition-all font-semibold flex items-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                </svg>
-                Reset
-              </button>
-            </div>
-
-            <div id="img-status" class="status-box text-sm text-gray-700 rounded-xl p-4"></div>
+<div class="flex gap-3">
+  <button id="btn-imgs-convert" class="btn-primary bg-gradient-to-r from-emerald-500 to-green-600 text-white px-8 py-3 rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 font-semibold text-base flex items-center gap-2">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+    </svg>
+    Convert to PDF
+  </button>
+  <button id="btn-imgs-reset" class="border-2 border-gray-300 px-8 py-3 rounded-xl hover:bg-gray-100 hover:border-gray-400 transition-all font-semibold flex items-center gap-2">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+    </svg>
+    Reset
+  </button>
+</div>
           </div>
         </section>
 
         <script>
-          const sizeModeSelect = document.getElementById("size-mode");
-          const desiredSizeGroup = document.getElementById("desired-size-group");
+  const sizeRadios = document.querySelectorAll('input[name="size-mode"]');
+  const desiredSizeGroup = document.getElementById("desired-size-group");
 
-          if (sizeModeSelect && desiredSizeGroup) {
-            sizeModeSelect.addEventListener("change", () => {
-              if (sizeModeSelect.value === "desired") {
-                desiredSizeGroup.classList.remove("hidden");
-              } else {
-                desiredSizeGroup.classList.add("hidden");
-              }
-            });
-          }
-        </script>
+  if (sizeRadios.length > 0 && desiredSizeGroup) {
+    sizeRadios.forEach(radio => {
+      radio.addEventListener("change", () => {
+        if (radio.value === "desired" && radio.checked) {
+          desiredSizeGroup.classList.remove("hidden");
+        } else if (radio.value === "original" && radio.checked) {
+          desiredSizeGroup.classList.add("hidden");
+        }
+      });
+    });
+  }
+</script>
 
         <!-- Merge PDFs -->
         <section id="tool-merge-pdf" class="tool hidden rounded-3xl glass-effect border-2 border-emerald-100 p-8 shadow-2xl animate-fade-in">
@@ -914,7 +988,7 @@
     }
   });
 
-  
+
 // Scroll to top
   scrollTopBtn.addEventListener("click", () => {
     window.scrollTo({ top: 0, behavior: "smooth" });

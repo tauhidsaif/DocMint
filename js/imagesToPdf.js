@@ -12,7 +12,6 @@ const imgMargin = document.getElementById("img-margin");
 const paperSizeSelect = document.getElementById("img-page");
 const fitModeSelect = document.getElementById("img-fitmode");
 
-const sizeModeSelect = document.getElementById("size-mode");
 const desiredSizeInput = document.getElementById("desired-size");
 const desiredUnitSelect = document.getElementById("desired-unit");
 
@@ -49,158 +48,68 @@ if (!dzImgs || !inpImgs) {
     `;
   }
 
-  inpImgs.addEventListener("change", () => {
-    const files = Array.from(inpImgs.files || []);
-    selectedImages = files.filter(f => f.type.startsWith("image/"));
-    if (!selectedImages.length) {
-      resetUI();
-      alert("Please select valid image files.");
-      return;
+inpImgs.addEventListener("change", () => {
+  const files = Array.from(inpImgs.files || []);
+  selectedImages = files.filter(f => f.type.startsWith("image/"));
+  if (!selectedImages.length) {
+    resetUI();
+    alert("Please select valid image files.");
+    return;
+  }
+  ctrlImgs?.classList.remove("hidden");
+  
+  // ✅ NEW: Show/Hide Output Mode section based on file count
+  const outputModeSection = document.querySelector('.bg-gradient-to-r.from-amber-50');
+  if (outputModeSection) {
+    if (selectedImages.length === 1) {
+      outputModeSection.classList.add("hidden");
+      // Auto-select combined mode for single file
+      const combinedRadio = document.getElementById("pdf-mode-combined");
+      if (combinedRadio) combinedRadio.checked = true;
+    } else {
+      outputModeSection.classList.remove("hidden");
     }
-    ctrlImgs?.classList.remove("hidden");
-    imgStatus.innerHTML = `
-      <div class="text-center px-3 py-2">
-        <div class="flex flex-wrap items-center justify-center gap-2">
-          <span class="text-emerald-500 font-bold text-2xl">${selectedImages.length}</span> 
-          <span class="text-gray-700 text-base">image(s) ready</span>
-        </div>
+  }
+  
+  imgStatus.innerHTML = `
+    <div class="text-center px-3 py-2">
+      <div class="flex flex-wrap items-center justify-center gap-2">
+        <span class="text-emerald-500 font-bold text-2xl">${selectedImages.length}</span> 
+        <span class="text-gray-700 text-base">image(s) ready</span>
       </div>
-    `;
-    removeDownloadButton();
-  });
+    </div>
+  `;
+  removeDownloadButton();
+});
 
   btnImgsReset?.addEventListener("click", resetUI);
 
-  btnImgsConvert?.addEventListener("click", async () => {
-    if (!selectedImages.length) return alert("Please select some images first.");
+btnImgsConvert?.addEventListener("click", async () => {
+  if (!selectedImages.length) return alert("Please select some images first.");
 
-    const { PDFDocument } = window.PDFLib || {};
-    if (!PDFDocument) return alert("⚠️ PDF-LIB not loaded. Check your script imports.");
+  const { PDFDocument } = window.PDFLib || {};
+  if (!PDFDocument) return alert("⚠️ PDF-LIB not loaded. Check your script imports.");
 
-    btnImgsConvert.disabled = true;
-    imgStatus.innerHTML = `
-      <div class="flex flex-col items-center justify-center gap-3 text-center px-3 py-3">
-        <div class="w-8 h-8 border-3 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
-        <span class="text-violet-600 font-medium text-base">Converting images... Please wait</span>
-      </div>
-    `;
+  // ✅ NEW: Check which mode is selected
+  const pdfMode = document.querySelector('input[name="pdf-mode"]:checked')?.value || "combined";
 
-    const pdfDoc = await PDFDocument.create();
-    const margin = Math.max(0, parseInt(imgMargin?.value || "0", 10));
-    const paper = paperSizeSelect?.value || "A4";
-    const fitMode = fitModeSelect?.value || "fit";
+  btnImgsConvert.disabled = true;
+  imgStatus.innerHTML = `
+    <div class="flex flex-col items-center justify-center gap-3 text-center px-3 py-3">
+      <div class="w-8 h-8 border-3 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+      <span class="text-violet-600 font-medium text-base">Converting images... Please wait</span>
+    </div>
+  `;
 
-    const sizes = {
-      A4: [595.28, 841.89],
-      A3: [841.89, 1190.55],
-      Letter: [612, 792],
-      Legal: [612, 1008],
-      Auto: null,
-    };
+  // ✅ NEW: Branch based on mode
+  if (pdfMode === "individual") {
+    await generateIndividualPDFs();
+  } else {
+    await generateCombinedPDF();
+  }
 
-    const sizeMode = sizeModeSelect?.value || "original";
-    let targetBytes = null;
-    if (sizeMode === "desired") {
-      const target = parseFloat(desiredSizeInput?.value || "0");
-      if (target > 0) {
-        const unit = desiredUnitSelect?.value || "MB";
-        targetBytes = unit === "KB" ? target * 1024 : target * 1024 * 1024;
-      }
-    }
-
-    let quality = 0.9;
-    let pdfBlob = null;
-
-    for (let attempt = 0; attempt < 6; attempt++) {
-      const tempPdf = await PDFDocument.create();
-
-      for (let i = 0; i < selectedImages.length; i++) {
-        const file = selectedImages[i];
-        const compressedBlob = await compressImage(file, quality);
-        const bytes = await compressedBlob.arrayBuffer();
-
-        let pdfImage;
-        try {
-          pdfImage =
-            compressedBlob.type === "image/jpeg"
-              ? await tempPdf.embedJpg(bytes)
-              : await tempPdf.embedPng(bytes);
-        } catch (e) {
-          console.error(`Failed to embed: ${file.name}`, e);
-          continue;
-        }
-
-        const [pw, ph] = sizes[paper] || [pdfImage.width, pdfImage.height];
-        const page = tempPdf.addPage([pw, ph]);
-
-        const iw = pdfImage.width;
-        const ih = pdfImage.height;
-        let dw = iw,
-          dh = ih;
-
-        if (sizes[paper]) {
-          if (fitMode === "fit") {
-            const scale = Math.min(
-              (pw - margin * 2) / iw,
-              (ph - margin * 2) / ih
-            );
-            dw = iw * scale;
-            dh = ih * scale;
-          } else if (fitMode === "stretch") {
-            dw = pw - margin * 2;
-            dh = ph - margin * 2;
-          }
-        }
-
-        const x = (pw - dw) / 2;
-        const y = (ph - dh) / 2;
-        page.drawImage(pdfImage, { x, y, width: dw, height: dh });
-
-        const percentage = Math.round(((i + 1) / selectedImages.length) * 100);
-        imgStatus.innerHTML = `
-          <div class="space-y-3 px-4 w-full max-w-md mx-auto">
-            <div class="flex flex-wrap items-center justify-center gap-2 text-base">
-              <span class="text-violet-600 font-semibold">Processing:</span>
-              <span class="text-gray-700">${i + 1} / ${selectedImages.length}</span>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-              <div class="bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 h-full rounded-full transition-all duration-300" style="width: ${percentage}%"></div>
-            </div>
-          </div>
-        `;
-        await nextFrame();
-      }
-
-      const pdfBytes = await tempPdf.save();
-      pdfBlob = new Blob([pdfBytes], { type: "application/pdf" });
-
-      if (!targetBytes) break;
-
-      const size = pdfBlob.size;
-      console.log(`Attempt ${attempt + 1}: ${size / 1024 / 1024} MB`);
-
-      const diff = size - targetBytes;
-      if (Math.abs(diff) <= targetBytes * 0.05) {
-        console.log("✅ Target size reached!");
-        break;
-      }
-
-      if (diff > 0) quality = Math.max(0.3, quality - 0.15);
-      else quality = Math.min(1, quality + 0.05);
-    }
-
-    const url = URL.createObjectURL(pdfBlob);
-    showDownloadButton(url);
-    imgStatus.innerHTML = `
-      <div class="flex flex-wrap items-center justify-center gap-2 text-emerald-600 font-semibold text-lg px-3 py-2">
-        <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-        </svg>
-        <span class="text-center">PDF ready to download!</span>
-      </div>
-    `;
-    btnImgsConvert.disabled = false;
-  });
+  btnImgsConvert.disabled = false;
+});
 }
 
 async function compressImage(file, quality = 0.9) {
@@ -233,19 +142,27 @@ function resetUI() {
   selectedImages = [];
   generatedPdfBlob = null;
   removeDownloadButton();
+  
+  // ✅ NEW: Hide output mode section on reset
+  const outputModeSection = document.querySelector('.bg-gradient-to-r.from-amber-50');
+  if (outputModeSection) {
+    outputModeSection.classList.add("hidden");
+  }
 }
 
-function showDownloadButton(url) {
+function showDownloadButton(url, isZip = false) {
   removeDownloadButton();
   btnImgsDownload = document.createElement("a");
   btnImgsDownload.href = url;
-  btnImgsDownload.download = `Images_${Date.now()}.pdf`;
+  btnImgsDownload.download = isZip 
+    ? `Individual_PDFs_${Date.now()}.zip` 
+    : `Images_${Date.now()}.pdf`;
   btnImgsDownload.innerHTML = `
     <span class="flex flex-wrap items-center justify-center gap-2 w-full">
       <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
       </svg>
-      <span class="text-base">Download PDF</span>
+      <span class="text-base">${isZip ? 'Download ZIP' : 'Download PDF'}</span>
     </span>
   `;
   btnImgsDownload.className =
@@ -259,10 +176,307 @@ function showDownloadButton(url) {
   
   setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
-
 function removeDownloadButton() {
   if (btnImgsDownload) {
     btnImgsDownload.remove();
     btnImgsDownload = null;
+  }
+}
+
+// ✅ NEW: Generate Combined PDF (your existing logic)
+async function generateCombinedPDF() {
+  const { PDFDocument } = window.PDFLib;
+  const pdfDoc = await PDFDocument.create();
+  const margin = 0;
+  const paper = paperSizeSelect?.value || "A4";
+  const fitMode = fitModeSelect?.value || "fit";
+  const sizes = {
+    A4: [595.28, 841.89],
+    A3: [841.89, 1190.55],
+    Letter: [612, 792],
+    Legal: [612, 1008],
+    Auto: null,
+  };
+
+  const sizeMode = document.querySelector('input[name="size-mode"]:checked')?.value || "original";
+  let targetBytes = null;
+  if (sizeMode === "desired") {
+    const target = parseFloat(desiredSizeInput?.value || "0");
+    if (target > 0) {
+      const unit = desiredUnitSelect?.value || "MB";
+      targetBytes = unit === "KB" ? target * 1024 : target * 1024 * 1024;
+    }
+  }
+
+  let quality = 0.9;
+  let pdfBlob = null;
+
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const tempPdf = await PDFDocument.create();
+
+    for (let i = 0; i < selectedImages.length; i++) {
+      const file = selectedImages[i];
+      const compressedBlob = await compressImage(file, quality);
+      const bytes = await compressedBlob.arrayBuffer();
+
+      let pdfImage;
+      try {
+        pdfImage =
+          compressedBlob.type === "image/jpeg"
+            ? await tempPdf.embedJpg(bytes)
+            : await tempPdf.embedPng(bytes);
+      } catch (e) {
+        console.error(`Failed to embed: ${file.name}`, e);
+        continue;
+      }
+
+      const [pw, ph] = sizes[paper] || [pdfImage.width, pdfImage.height];
+      const page = tempPdf.addPage([pw, ph]);
+
+      const iw = pdfImage.width;
+      const ih = pdfImage.height;
+      let dw = iw, dh = ih;
+
+      if (sizes[paper]) {
+        if (fitMode === "fit") {
+          const scale = Math.min(
+            (pw - margin * 2) / iw,
+            (ph - margin * 2) / ih
+          );
+          dw = iw * scale;
+          dh = ih * scale;
+        } else if (fitMode === "stretch") {
+          dw = pw - margin * 2;
+          dh = ph - margin * 2;
+        }
+      }
+
+      const x = (pw - dw) / 2;
+      const y = (ph - dh) / 2;
+      page.drawImage(pdfImage, { x, y, width: dw, height: dh });
+
+      const percentage = Math.round(((i + 1) / selectedImages.length) * 100);
+      imgStatus.innerHTML = `
+        <div class="space-y-3 px-4 w-full max-w-md mx-auto">
+          <div class="flex flex-wrap items-center justify-center gap-2 text-base">
+            <span class="text-violet-600 font-semibold">Processing:</span>
+            <span class="text-gray-700">${i + 1} / ${selectedImages.length}</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+            <div class="bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 h-full rounded-full transition-all duration-300" style="width: ${percentage}%"></div>
+          </div>
+        </div>
+      `;
+      await nextFrame();
+    }
+
+    const pdfBytes = await tempPdf.save();
+    pdfBlob = new Blob([pdfBytes], { type: "application/pdf" });
+
+    if (!targetBytes) break;
+
+    const size = pdfBlob.size;
+    console.log(`Attempt ${attempt + 1}: ${size / 1024 / 1024} MB`);
+
+    const diff = size - targetBytes;
+    if (Math.abs(diff) <= targetBytes * 0.05) {
+      console.log("✅ Target size reached!");
+      break;
+    }
+
+    if (diff > 0) quality = Math.max(0.3, quality - 0.15);
+    else quality = Math.min(1, quality + 0.05);
+  }
+
+  const url = URL.createObjectURL(pdfBlob);
+  showDownloadButton(url);
+  imgStatus.innerHTML = `
+    <div class="flex flex-wrap items-center justify-center gap-2 text-emerald-600 font-semibold text-lg px-3 py-2">
+      <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      <span class="text-center">PDF ready to download!</span>
+    </div>
+  `;
+}
+
+// ✅ NEW: Generate Individual PDFs (one per image)
+async function generateIndividualPDFs() {
+  const { PDFDocument } = window.PDFLib;
+  const JSZip = window.JSZip;
+  
+  // Check which download method is selected
+  const downloadMethod = document.querySelector('input[name="download-method"]:checked')?.value || 'separate';
+  
+  const margin = 0;
+  const paper = paperSizeSelect?.value || "A4";
+  const fitMode = fitModeSelect?.value || "fit";
+  const sizes = {
+    A4: [595.28, 841.89],
+    A3: [841.89, 1190.55],
+    Letter: [612, 792],
+    Legal: [612, 1008],
+    Auto: null,
+  };
+
+  const sizeMode = document.querySelector('input[name="size-mode"]:checked')?.value || "original";
+  let targetBytes = null;
+  if (sizeMode === "desired") {
+    const target = parseFloat(desiredSizeInput?.value || "0");
+    if (target > 0) {
+      const unit = desiredUnitSelect?.value || "MB";
+      targetBytes = unit === "KB" ? target * 1024 : target * 1024 * 1024;
+    }
+  }
+
+  const pdfBlobs = []; // Store all PDF blobs for separate downloads
+
+  for (let i = 0; i < selectedImages.length; i++) {
+    const file = selectedImages[i];
+    let quality = 0.9;
+    let pdfBlob = null;
+
+    // Compression loop for each individual PDF
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const pdfDoc = await PDFDocument.create();
+      const compressedBlob = await compressImage(file, quality);
+      const bytes = await compressedBlob.arrayBuffer();
+
+      let pdfImage;
+      try {
+        pdfImage =
+          compressedBlob.type === "image/jpeg"
+            ? await pdfDoc.embedJpg(bytes)
+            : await pdfDoc.embedPng(bytes);
+      } catch (e) {
+        console.error(`Failed to embed: ${file.name}`, e);
+        break;
+      }
+
+      const [pw, ph] = sizes[paper] || [pdfImage.width, pdfImage.height];
+      const page = pdfDoc.addPage([pw, ph]);
+
+      const iw = pdfImage.width;
+      const ih = pdfImage.height;
+      let dw = iw, dh = ih;
+
+      if (sizes[paper]) {
+        if (fitMode === "fit") {
+          const scale = Math.min(
+            (pw - margin * 2) / iw,
+            (ph - margin * 2) / ih
+          );
+          dw = iw * scale;
+          dh = ih * scale;
+        } else if (fitMode === "stretch") {
+          dw = pw - margin * 2;
+          dh = ph - margin * 2;
+        }
+      }
+
+      const x = (pw - dw) / 2;
+      const y = (ph - dh) / 2;
+      page.drawImage(pdfImage, { x, y, width: dw, height: dh });
+
+      const pdfBytes = await pdfDoc.save();
+      pdfBlob = new Blob([pdfBytes], { type: "application/pdf" });
+
+      if (!targetBytes) break;
+
+      const size = pdfBlob.size;
+      const diff = size - targetBytes;
+      if (Math.abs(diff) <= targetBytes * 0.05) break;
+
+      if (diff > 0) quality = Math.max(0.3, quality - 0.15);
+      else quality = Math.min(1, quality + 0.05);
+    }
+
+    // Store PDF blob with filename
+    const fileName = file.name.replace(/\.[^/.]+$/, "") + ".pdf";
+    pdfBlobs.push({ blob: pdfBlob, name: fileName });
+
+    // Update progress
+    const percentage = Math.round(((i + 1) / selectedImages.length) * 100);
+    imgStatus.innerHTML = `
+      <div class="space-y-3 px-4 w-full max-w-md mx-auto">
+        <div class="flex flex-wrap items-center justify-center gap-2 text-base">
+          <span class="text-violet-600 font-semibold">Creating PDFs:</span>
+          <span class="text-gray-700">${i + 1} / ${selectedImages.length}</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+          <div class="bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 h-full rounded-full transition-all duration-300" style="width: ${percentage}%"></div>
+        </div>
+      </div>
+    `;
+    await nextFrame();
+  }
+
+  // Handle download based on selected method
+  if (downloadMethod === 'zip') {
+    // Create ZIP file
+    if (!JSZip) {
+      alert("⚠️ JSZip not loaded. Cannot create ZIP file.");
+      return;
+    }
+
+    imgStatus.innerHTML = `
+      <div class="flex flex-col items-center justify-center gap-3 text-center px-3 py-3">
+        <div class="w-8 h-8 border-3 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+        <span class="text-violet-600 font-medium text-base">Creating ZIP file...</span>
+      </div>
+    `;
+
+    const zip = new JSZip();
+    pdfBlobs.forEach(({ blob, name }) => {
+      zip.file(name, blob);
+    });
+
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(zipBlob);
+    showDownloadButton(url, true); // true = ZIP file
+
+    imgStatus.innerHTML = `
+      <div class="flex flex-wrap items-center justify-center gap-2 text-emerald-600 font-semibold text-lg px-3 py-2">
+        <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <span class="text-center">ZIP file ready to download!</span>
+      </div>
+    `;
+  } else {
+    // Download separately (trigger multiple downloads)
+    imgStatus.innerHTML = `
+      <div class="flex flex-col items-center justify-center gap-3 text-center px-3 py-3">
+        <div class="w-8 h-8 border-3 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+        <span class="text-violet-600 font-medium text-base">Preparing downloads...</span>
+      </div>
+    `;
+
+    await nextFrame();
+
+    // Trigger downloads with small delays to avoid browser blocking
+    for (let i = 0; i < pdfBlobs.length; i++) {
+      const { blob, name } = pdfBlobs[i];
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.click();
+      
+      // Clean up URL after a delay
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      
+      // Small delay between downloads to prevent browser blocking
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+
+    imgStatus.innerHTML = `
+      <div class="flex flex-wrap items-center justify-center gap-2 text-emerald-600 font-semibold text-lg px-3 py-2">
+        <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <span class="text-center">${pdfBlobs.length} PDFs downloaded successfully!</span>
+      </div>
+    `;
   }
 }
