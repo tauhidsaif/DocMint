@@ -1,4 +1,5 @@
-import { wireDrop, nextFrame, toMB } from "./main.js";
+import { wireDrop, nextFrame, toMB, showAlert } from "./main.js";
+
 
 console.log("Loaded: Images → PDF Tool (Custom Size Control)");
 
@@ -53,8 +54,7 @@ inpImgs.addEventListener("change", () => {
   selectedImages = files.filter(f => f.type.startsWith("image/"));
   if (!selectedImages.length) {
     resetUI();
-    alert("Please select valid image files.");
-    return;
+showAlert("Please select valid image files.", "error");    return;
   }
   ctrlImgs?.classList.remove("hidden");
   
@@ -85,10 +85,10 @@ inpImgs.addEventListener("change", () => {
   btnImgsReset?.addEventListener("click", resetUI);
 
 btnImgsConvert?.addEventListener("click", async () => {
-  if (!selectedImages.length) return alert("Please select some images first.");
+  if (!selectedImages.length) return    showAlert("Select some images first.", "warning");
 
   const { PDFDocument } = window.PDFLib || {};
-  if (!PDFDocument) return alert("⚠️ PDF-LIB not loaded. Check your script imports.");
+  if (!PDFDocument) return  showAlert("PDF-LIB not loaded. Check your script imports.", "error");
 
   // ✅ NEW: Check which mode is selected
   const pdfMode = document.querySelector('input[name="pdf-mode"]:checked')?.value || "combined";
@@ -210,6 +210,7 @@ async function generateCombinedPDF() {
 
   let quality = 0.9;
   let pdfBlob = null;
+
 
   for (let attempt = 0; attempt < 6; attempt++) {
     const tempPdf = await PDFDocument.create();
@@ -415,7 +416,7 @@ async function generateIndividualPDFs() {
   if (downloadMethod === 'zip') {
     // Create ZIP file
     if (!JSZip) {
-      alert("⚠️ JSZip not loaded. Cannot create ZIP file.");
+   showAlert("JSZip not loaded. Cannot create ZIP file.", "error");
       return;
     }
 

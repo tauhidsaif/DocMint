@@ -1,4 +1,4 @@
-import { wireDrop, nextFrame, toMB } from "./main.js";
+import { wireDrop, nextFrame, toMB, showAlert } from "./main.js";
 
 console.log("Loaded: Merge PDFs Tool");
 
@@ -58,7 +58,7 @@ if (!dzMerge || !inpMerge) {
     );
 
     if (!mergeFiles.length) {
-      alert("Please select valid PDF files.");
+      showAlert("Please select valid PDF files.", "error");
       inpMerge.value = "";
       return;
     }
@@ -115,11 +115,11 @@ if (!dzMerge || !inpMerge) {
   });
 
   btnMerge?.addEventListener("click", async () => {
-    if (!mergeFiles.length) return alert("Select some PDF files first");
+    if (!mergeFiles.length) return showAlert("Select some PDF files first.", "warning");
 
     const { PDFDocument } = window.PDFLib || {};
     if (!PDFDocument) {
-      alert("⚠️ PDF-LIB not loaded. Check your script imports.");
+      showAlert("PDF-LIB not loaded. Check your script imports.", "error");
       return;
     }
 
@@ -156,7 +156,7 @@ if (!dzMerge || !inpMerge) {
         await nextFrame();
       } catch (e) {
         console.error("❌ Error merging:", e);
-        alert(`Failed to merge ${file.name}`);
+        showAlert(`Failed to merge: ${file.name}`, "error");
       }
     }
 

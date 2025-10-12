@@ -1,4 +1,4 @@
-import { wireDrop, nextFrame } from "./main.js";
+import { wireDrop, nextFrame, showAlert } from "./main.js";
 
 console.log("Loaded: PDF Organizer Tool (DocMint Style ✨)");
 
@@ -132,8 +132,7 @@ function updatePageOrder() {
 
 // === Save Organized PDF ===
 btnOrgSave.addEventListener("click", async () => {
-  if (!pdfDoc) return alert("Load a PDF first.");
-
+if (!pdfDoc) return showAlert("Load a PDF first.", "warning");
   orgStatus.innerHTML = `<div class='text-blue-600 font-medium animate-pulse'>💾 Creating organized PDF...</div>`;
   btnOrgSave.disabled = true;
   btnOrgSave.textContent = "Saving...";

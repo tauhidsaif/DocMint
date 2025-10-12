@@ -1,4 +1,4 @@
-import { wireDrop, nextFrame, toMB } from "./main.js";
+import { wireDrop, nextFrame, toMB, showAlert } from "./main.js";
 
 console.log("Loaded: PDF → JPG Tool (Low-Lag Preview + HQ Download)");
 
@@ -28,7 +28,7 @@ if (!dzPdf || !inpPdf) {
       return;
     }
     if (f.type !== "application/pdf" && !f.name.toLowerCase().endsWith(".pdf")) {
-      alert("Select a valid PDF file");
+      showAlert("Select a valid PDF file.", "error");
       inpPdf.value = "";
       label.textContent = "Drop a PDF here or click to choose";
       return;
@@ -56,8 +56,8 @@ if (!dzPdf || !inpPdf) {
   });
 
   btnPdfConvert?.addEventListener("click", async () => {
-    if (!pdfFile) return alert("Choose a PDF file first");
-    if (!window["pdfjsLib"]) return alert("pdf.js not loaded properly");
+    if (!pdfFile) return showAlert("Choose a PDF file first.", "warning");
+    if (!window["pdfjsLib"]) return showAlert("pdf.js not loaded properly.", "error");
 
     const concurrency = Math.max(1, Math.min(4, parseInt(pdfConcurrency?.value || "2", 10)));
     const dpr = window.devicePixelRatio || 1;
@@ -88,8 +88,7 @@ if (!dzPdf || !inpPdf) {
     } catch (err) {
       console.error(err);
       pdfStatus.innerHTML = `<div class='text-red-600 font-semibold'>❌ Error during conversion</div>`;
-      alert("Failed to render PDF. Try smaller scale or simpler file.");
-    }
+showAlert("Failed to render PDF. Try a smaller scale or simpler file.", "error");    }
   });
 
   async function renderPreviewAndPrepareDownload(i, doc, lowW, lowH, fullW, fullH, dpr) {

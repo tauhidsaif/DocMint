@@ -1,4 +1,4 @@
-import { wireDrop, nextFrame, toMB } from "./main.js";
+import { wireDrop, nextFrame, toMB, showAlert } from "./main.js";
 
 console.log("Loaded: Image Resize/Compress Tool");
 
@@ -87,7 +87,7 @@ if (!dzCompress || !inpCompress) {
 
     compressFiles = files.filter(f => f.type.startsWith("image/"));
     if (!compressFiles.length) {
-      alert("Please select image files.");
+      showAlert("Please select image files.", "error");
       return resetUI();
     }
 
@@ -147,7 +147,7 @@ if (!dzCompress || !inpCompress) {
   // ---------- Main Compression ----------
   btnCompress.addEventListener("click", async () => {
     if (!compressFiles.length) {
-      alert("Select images first");
+      showAlert("Select images first.", "warning");
       return;
     }
 
@@ -237,7 +237,7 @@ if (!dzCompress || !inpCompress) {
     if (!compressedResults.length) return;
     
     if (typeof JSZip === 'undefined') {
-      alert("⚠️ JSZip library not loaded. Please check your script imports.");
+    showAlert("JSZip library not loaded. Please check your script imports.", "error");
       return;
     }
     
@@ -269,8 +269,7 @@ if (!dzCompress || !inpCompress) {
       `;
     } catch (err) {
       console.error("ZIP creation error:", err);
-      alert("Failed to create ZIP file");
-    }
+showAlert("Failed to create ZIP file", "error");    }
   });
 
   // ---------- Helper Functions ----------

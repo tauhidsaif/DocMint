@@ -235,9 +235,128 @@
       }
       
       .status-box {
-        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        background: linear-gradient(135deg, hsl(210, 40%, 98%) 0%, #f1f5f9 100%);
         border-left: 4px solid #10b981;
       }
+
+      /* Beautiful Alert System */
+.docmint-alert {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  max-width: 400px;
+  min-width: 300px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(12px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: slideInRight 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  font-size: 14px;
+  font-weight: 500;
+  border: 2px solid;
+}
+
+.docmint-alert.success {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.95) 0%, rgba(5, 150, 105, 0.95) 100%);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+.docmint-alert.error {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.95) 0%, rgba(220, 38, 38, 0.95) 100%);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+.docmint-alert.warning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.95) 0%, rgba(217, 119, 6, 0.95) 100%);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+.docmint-alert.info {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.95) 0%, rgba(37, 99, 235, 0.95) 100%);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+.docmint-alert-icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+}
+
+.docmint-alert-content {
+  flex: 1;
+  line-height: 1.5;
+}
+
+.docmint-alert-close {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.docmint-alert-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.docmint-alert-close svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+}
+
+.docmint-alert.removing {
+  animation: slideOutRight 0.3s ease-out forwards;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 640px) {
+  .docmint-alert {
+    left: 10px;
+    right: 10px;
+    max-width: calc(100% - 20px);
+    min-width: unset;
+  }
+}
+
     </style>
 
     <!-- Libraries -->
