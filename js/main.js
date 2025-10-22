@@ -7,6 +7,7 @@ const content = document.getElementById("content");
 
 function showTool(id) {
   sections.forEach((s) => s.classList.add("hidden"));
+  document.getElementById("home-section")?.classList.add("hidden"); // ⬅️ add this
   const el = document.getElementById(id);
   if (el) el.classList.remove("hidden");
   buttons.forEach((b) =>
@@ -14,6 +15,25 @@ function showTool(id) {
   );
   content?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
+// Go Home function (works for logo, title, and subtitle)
+function goHome() {
+  sections.forEach((s) => s.classList.add("hidden"));
+  document.getElementById("home-section")?.classList.remove("hidden");
+  buttons.forEach((b) => b.removeAttribute("aria-current"));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// Wait until DOM is ready, then attach all 3 click listeners
+document.addEventListener("DOMContentLoaded", () => {
+  const logo = document.getElementById("go-home-logo");
+  const container = document.getElementById("go-home-container");
+  const title = document.getElementById("go-home");
+
+  logo?.addEventListener("click", goHome);
+  container?.addEventListener("click", goHome);
+  title?.addEventListener("click", goHome);
+});
+
 
 // Add click handlers safely
 buttons.forEach((b) => {
