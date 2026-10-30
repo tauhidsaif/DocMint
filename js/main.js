@@ -14,14 +14,20 @@ function showTool(id) {
     if (b.dataset.target === id) b.setAttribute("aria-current", "page");
     else b.removeAttribute("aria-current");
   });
-  content?.scrollIntoView({ behavior: "smooth", block: "start" });
+  content?.scrollIntoView({
+    behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    block: "start"
+  });
 }
 // Go Home function (works for logo, title, and subtitle)
 function goHome() {
   sections.forEach((s) => s.classList.add("hidden"));
   document.getElementById("home-section")?.classList.remove("hidden");
   buttons.forEach((b) => b.removeAttribute("aria-current"));
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  window.scrollTo({
+    top: 0,
+    behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
+  });
 }
 
 // Wait until DOM is ready, then attach all 3 click listeners
