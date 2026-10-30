@@ -83,6 +83,11 @@ async function loadSelectedPdf() {
   } catch (error) {
     console.error("PDF load failed:", error);
     await disposePdf();
+    orgPages.querySelectorAll("canvas").forEach(canvas => {
+      canvas.width = canvas.height = 0;
+    });
+    orgPages.innerHTML = "";
+    ctrlOrg.classList.add("hidden");
     orgStatus.textContent = "Could not open this PDF: " + (error?.message || "Unknown error");
     showAlert("Could not open this PDF. It may be damaged or password-protected.", "error");
   } finally {
@@ -216,6 +221,8 @@ async function saveOrganizedPdf() {
   saving = true;
   inpOrg.disabled = true;
   orgPages.classList.add("opacity-70");
+  orgPages.style.pointerEvents = "none";
+  orgPages.setAttribute("aria-busy", "true");
   btnOrgSave.disabled = true;
   btnOrgReset.disabled = true;
   orgStatus.textContent = "Building your organized PDF…";
@@ -256,6 +263,8 @@ async function saveOrganizedPdf() {
     saving = false;
     inpOrg.disabled = false;
     orgPages.classList.remove("opacity-70");
+    orgPages.style.pointerEvents = "";
+    orgPages.removeAttribute("aria-busy");
     btnOrgSave.disabled = !pdfDoc || order.length === 0;
     btnOrgReset.disabled = false;
   }
