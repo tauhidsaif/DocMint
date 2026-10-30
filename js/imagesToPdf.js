@@ -299,8 +299,10 @@ async function optimizePdfToTarget(images, targetBytes, pageSettings) {
   let scale = 1;
   let lowQuality = await measure(MIN_TARGET_QUALITY, scale);
   let downscaleAttempts = 0;
+  let lastTooLargeScale = null;
 
   while (lowQuality.blob.size > targetBytes && scale > 0.04 && downscaleAttempts < 12) {
+    lastTooLargeScale = scale;
     const ratio = Math.sqrt(targetBytes / lowQuality.blob.size) * 0.9;
     const nextScale = Math.max(0.04, scale * Math.min(0.9, ratio));
     if (nextScale >= scale) break;
@@ -311,6 +313,23 @@ async function optimizePdfToTarget(images, targetBytes, pageSettings) {
 
   if (lowQuality.blob.size > targetBytes) {
     return { ...smallestCandidate, result: "unreachable" };
+  }
+
+  // Refine the resolution so we do not downscale more than necessary.
+  if (lastTooLargeScale !== null) {
+    let fittingScale = scale;
+    let oversizedScale = lastTooLargeScale;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const middleScale = (fittingScale + oversizedScale) / 2;
+      const candidate = await measure(MIN_TARGET_QUALITY, middleScale);
+      if (candidate.blob.size <= targetBytes) {
+        fittingScale = middleScale;
+        lowQuality = candidate;
+      } else {
+        oversizedScale = middleScale;
+      }
+    }
+    scale = fittingScale;
   }
 
   // Binary-search JPEG quality and retain the largest PDF that stays at/below the target.
