@@ -74,6 +74,7 @@ if (!dzMerge || !inpMerge) {
 
     btnMerge.disabled = true;
     btnMergeReset.disabled = true;
+    inpMerge.disabled = true;
     clearDownload();
 
     try {
@@ -117,6 +118,7 @@ if (!dzMerge || !inpMerge) {
     } finally {
       btnMerge.disabled = false;
       btnMergeReset.disabled = false;
+      inpMerge.disabled = false;
     }
   });
 }
