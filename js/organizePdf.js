@@ -214,6 +214,8 @@ async function saveOrganizedPdf() {
   }
 
   saving = true;
+  inpOrg.disabled = true;
+  orgPages.classList.add("opacity-70");
   btnOrgSave.disabled = true;
   btnOrgReset.disabled = true;
   orgStatus.textContent = "Building your organized PDF…";
@@ -252,6 +254,8 @@ async function saveOrganizedPdf() {
   } finally {
     if (url) setTimeout(() => URL.revokeObjectURL(url), 15000);
     saving = false;
+    inpOrg.disabled = false;
+    orgPages.classList.remove("opacity-70");
     btnOrgSave.disabled = !pdfDoc || order.length === 0;
     btnOrgReset.disabled = false;
   }
