@@ -24,3 +24,156 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
 
 /* Cards */
 .card-img { max-width: 100%; height: auto; display: block; border-radius: 0.5rem; }
+
+
+/* DocMint 2.0 — calm, lightweight interface */
+:root {
+  color-scheme: light;
+  --dm-ink: #172b25;
+  --dm-muted: #64766f;
+  --dm-green: #087b57;
+  --dm-green-dark: #056344;
+  --dm-line: #e2ebe6;
+  --dm-surface: #ffffff;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  color: var(--dm-ink);
+  background:
+    radial-gradient(ellipse at 8% 0%, rgba(209, 250, 229, .55), transparent 34rem),
+    linear-gradient(180deg, #f7faf8 0%, #f2f6f3 100%);
+  text-rendering: optimizeLegibility;
+}
+
+header.glass-effect {
+  background: rgba(255, 255, 255, .9);
+  border-bottom-color: rgba(16, 185, 129, .14);
+  box-shadow: 0 4px 18px rgba(20, 52, 39, .06);
+}
+
+#content { min-width: 0; }
+#home-section .docmint-hero {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(16, 185, 129, .18);
+  background:
+    radial-gradient(circle at 88% 12%, rgba(110, 231, 183, .25), transparent 18rem),
+    linear-gradient(135deg, #f0fdf6 0%, #ffffff 58%, #effaf5 100%);
+  box-shadow: 0 18px 48px rgba(21, 68, 48, .08);
+}
+#home-section .docmint-hero h2 {
+  max-width: 15ch;
+  color: #123b2d;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  letter-spacing: -.045em;
+  line-height: 1.06;
+}
+#home-section .docmint-hero p {
+  max-width: 56ch;
+  color: #52685f;
+  font-size: 1.05rem;
+}
+.feature-badge {
+  border-color: #e1eee7 !important;
+  box-shadow: 0 3px 10px rgba(22, 57, 42, .04) !important;
+  color: #187653 !important;
+  transform: none !important;
+}
+
+.tool-btn {
+  border-color: #e5ece8 !important;
+  background: rgba(255,255,255,.88);
+  color: #344b41;
+  box-shadow: 0 2px 7px rgba(25, 55, 41, .025);
+  transform: none !important;
+}
+.tool-btn:not(.active):hover {
+  border-color: #a7dfc4 !important;
+  background: #f0fbf5 !important;
+  color: #076b4a !important;
+  box-shadow: 0 5px 14px rgba(15, 118, 78, .07) !important;
+}
+.tool-btn[aria-current="page"] {
+  color: #056344 !important;
+  border-color: #a8ddc4 !important;
+  background: linear-gradient(100deg, #e9f9ef 0%, #f4fcf7 100%) !important;
+  box-shadow: inset 3px 0 #0c9665, 0 4px 12px rgba(15, 118, 78, .05) !important;
+}
+
+body .dropzone {
+  border-color: #d5e4db;
+  background: linear-gradient(145deg, #fbfefc, #f5faf7);
+  border-radius: 1.25rem;
+  transition: border-color .18s ease, background .18s ease, box-shadow .18s ease;
+}
+body .dropzone:hover {
+  border-color: #74c69d;
+  background: #f1fbf5;
+  box-shadow: 0 10px 24px rgba(17, 117, 74, .08);
+  transform: none;
+}
+body .dropzone:focus-visible {
+  outline: 3px solid rgba(16, 185, 129, .32);
+  outline-offset: 3px;
+}
+.dropzone-icon { margin-bottom: .65rem; }
+
+.tool {
+  border-color: #e2ebe6 !important;
+  background: rgba(255,255,255,.92);
+  box-shadow: 0 12px 34px rgba(23, 57, 40, .055) !important;
+}
+.tool h3 {
+  letter-spacing: -.025em;
+  color: #183c2e;
+}
+
+input:not([type="radio"]):not([type="checkbox"]),
+select,
+textarea {
+  border-color: #dce7e0;
+  border-radius: .75rem;
+  background-color: #fff;
+}
+input:focus-visible, select:focus-visible, textarea:focus-visible,
+button:focus-visible, a:focus-visible {
+  outline: 3px solid rgba(16, 185, 129, .28);
+  outline-offset: 2px;
+}
+button:disabled { cursor: not-allowed; }
+
+.status-box {
+  border-left-color: #19a56e;
+  border-radius: .9rem;
+  background: #f7fbf8;
+  color: #40554b;
+}
+.docmint-alert {
+  border-radius: 14px;
+  box-shadow: 0 14px 38px rgba(14, 40, 27, .16);
+}
+
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: #c7d8ce;
+}
+.thin-scroll::-webkit-scrollbar-thumb:hover {
+  background: #a9c5b5;
+}
+
+@media (max-width: 640px) {
+  #home-section .docmint-hero { padding: 1.5rem !important; }
+  #home-section .docmint-hero h2 { font-size: 2.35rem; }
+  .tool { padding: 1.15rem !important; }
+  aside { border-radius: 1.25rem !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
