@@ -3,14 +3,14 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>DocMint — File Tools (Fast, Private, Smooth)</title>
+    <title>DocMint — Simple, private document tools</title>
     <meta
       name="description"
       content="All-in-one file tools. PDF ⇄ Images, merge, compress — local, smooth animations, optimized for big PDFs."
     />
 
     <!-- Tailwind -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.tailwindcss.com"></script>
     <link rel="icon" href="data:;base64,=" />
     
     <style>
@@ -358,17 +358,9 @@
 }
 
     </style>
+    <link rel="stylesheet" href="css/style.css" />
 
-    <!-- Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-    <script>
-      if (window.pdfjsLib) {
-        pdfjsLib.GlobalWorkerOptions.workerSrc =
-          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
-      }
-    </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/pkijs@3.1.10/build/index.min.js"></script>
+    <!-- Heavy PDF libraries load on demand to keep the first view fast. -->
   </head>
 
   <body class="antialiased">
@@ -478,10 +470,10 @@
         <section id="home-section">
         <div class="rounded-3xl glass-effect border-2 border-emerald-100 p-10 shadow-2xl animate-fade-in gradient-bg">
           <h2 class="text-4xl font-bold bg-gradient-to-r from-emerald-600 via-green-600 to-emerald-500 bg-clip-text text-transparent mb-4">
-            All your file tools in one place
+            Your documents, handled beautifully.
           </h2>
           <p class="text-gray-700 text-lg leading-relaxed mb-6">
-            Everything runs locally for privacy. Heavy tasks are optimized to avoid UI lag.
+            Convert, organize and compress files in a clean workspace. Your files stay on your device.
           </p>
           <div class="flex flex-wrap gap-3">
             <span class="feature-badge px-5 py-2.5 bg-white rounded-full text-sm font-semibold text-emerald-600 shadow-md border-2 border-emerald-100 flex items-center gap-2">
@@ -500,7 +492,7 @@
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
               </svg>
-              Works Offline
+              No account needed
             </span>
           </div>
         </div>
@@ -1045,7 +1037,6 @@
     
 
     <!-- Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <script type="module" src="js/main.js"></script>
     <script type="module" src="js/pdfToJpg.js"></script>
     <script type="module" src="js/imagesToPdf.js"></script>
