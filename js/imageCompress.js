@@ -132,7 +132,6 @@ async function processImages() {
   btnCompressZip.disabled = true;
   inpCompress.disabled = true;
   clearOutput();
-  renderInputList();
 
   let failures = 0;
   let overTarget = 0;
@@ -205,6 +204,7 @@ async function compressToMaxSize(sourceCanvas, targetBytes) {
     const ratio = Math.sqrt(targetBytes / lowQualityBlob.size) * 0.88;
     const nextScale = Math.max(0.08, scale * Math.min(0.88, ratio));
     if (nextScale >= scale) break;
+    if (workingCanvas !== sourceCanvas) workingCanvas.width = workingCanvas.height = 0;
     scale = nextScale;
     workingCanvas = resizeCanvas(sourceCanvas, scale);
     lowQualityBlob = await canvasToBlob(workingCanvas, 0.12);
@@ -369,6 +369,7 @@ async function downloadZip() {
   if (!compressedResults.length) return;
 
   btnCompressZip.disabled = true;
+  btnCompress.disabled = true;
   btnCompressReset.disabled = true;
   inpCompress.disabled = true;
   try {
@@ -383,13 +384,14 @@ async function downloadZip() {
         compressStatus.textContent = "Creating ZIP… " + Math.round(metadata.percent) + "%";
       }
     );
-    const url = createObjectUrl(blob);
+    const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.download = "Compressed_" + Date.now() + ".zip";
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 15000);
     compressStatus.textContent = "ZIP downloaded · " + formatBytes(blob.size);
   } catch (error) {
     console.error("ZIP creation failed:", error);
@@ -397,6 +399,7 @@ async function downloadZip() {
     showAlert("Could not create the ZIP file.", "error");
   } finally {
     btnCompressZip.disabled = compressedResults.length === 0;
+    btnCompress.disabled = false;
     btnCompressReset.disabled = false;
     inpCompress.disabled = false;
   }
