@@ -16,9 +16,12 @@ const desiredUnitSelect = document.getElementById("desired-unit");
 const MIN_TARGET_QUALITY = 0.08;
 const MAX_TARGET_QUALITY = 0.97;
 const TARGET_SEARCH_STEPS = 7;
+const MAX_IMAGE_PIXELS = 16000000;
 
 let btnImgsDownload = null;
+let activeDownloadUrl = null;
 let selectedImages = [];
+let isConverting = false;
 
 if (!dzImgs || !inpImgs) {
   console.warn("Missing UI elements for Images to PDF.");
@@ -78,6 +81,9 @@ if (!dzImgs || !inpImgs) {
     }
 
     btnImgsConvert.disabled = true;
+    if (btnImgsReset) btnImgsReset.disabled = true;
+    inpImgs.disabled = true;
+    isConverting = true;
     try {
       await ensurePdfLib();
       if (!window.PDFLib?.PDFDocument) {
@@ -96,7 +102,10 @@ if (!dzImgs || !inpImgs) {
       imgStatus.textContent = "Could not create the PDF: " + (error?.message || "Unknown error");
       showAlert("PDF creation failed. Check the console for details.", "error");
     } finally {
+      isConverting = false;
       btnImgsConvert.disabled = false;
+      if (btnImgsReset) btnImgsReset.disabled = false;
+      inpImgs.disabled = false;
     }
   });
 }
@@ -160,8 +169,10 @@ function loadImage(file) {
 async function imageToBlob(image, quality, scale, forceJpeg) {
   const sourceWidth = image.naturalWidth || image.width;
   const sourceHeight = image.naturalHeight || image.height;
-  const width = Math.max(1, Math.round(sourceWidth * scale));
-  const height = Math.max(1, Math.round(sourceHeight * scale));
+  const safetyScale = Math.min(1, Math.sqrt(MAX_IMAGE_PIXELS / (sourceWidth * sourceHeight)));
+  const effectiveScale = Math.min(scale, safetyScale);
+  const width = Math.max(1, Math.round(sourceWidth * effectiveScale));
+  const height = Math.max(1, Math.round(sourceHeight * effectiveScale));
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
@@ -252,6 +263,7 @@ async function buildPdfCandidate(images, settings) {
       width: drawWidth,
       height: drawHeight
     });
+    await nextFrame();
   }
 
   const pdfBytes = await pdfDoc.save({ useObjectStreams: true });
@@ -391,6 +403,7 @@ function setSuccessStatus(title, details) {
 }
 
 function resetUI() {
+  if (isConverting) return;
   inpImgs.value = "";
   ctrlImgs?.classList.add("hidden");
   imgStatus.textContent = "";
@@ -419,13 +432,17 @@ function showDownloadButton(url, isZip = false) {
   const buttonContainer = btnImgsConvert.parentElement;
   if (buttonContainer) buttonContainer.appendChild(btnImgsDownload);
 
-  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  activeDownloadUrl = url;
 }
 
 function removeDownloadButton() {
   if (btnImgsDownload) {
     btnImgsDownload.remove();
     btnImgsDownload = null;
+  }
+  if (activeDownloadUrl) {
+    URL.revokeObjectURL(activeDownloadUrl);
+    activeDownloadUrl = null;
   }
 }
 
