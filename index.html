@@ -695,8 +695,8 @@
     <label class="flex items-center gap-3 p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all">
       <input type="radio" name="size-mode" value="desired" id="size-mode-desired" class="w-5 h-5 text-blue-600 focus:ring-2 focus:ring-blue-400" />
       <div class="flex-1">
-        <span class="font-semibold text-gray-800 block">Reduce to Target Size</span>
-        <span class="text-xs text-gray-600">Compress to specific file size</span>
+        <span class="font-semibold text-gray-800 block">Target PDF Size</span>
+        <span class="text-xs text-gray-600">Compress as close as possible without exceeding the target</span>
       </div>
     </label>
     
@@ -710,6 +710,7 @@
         </select>
         <span class="text-sm text-gray-600">Target file size</span>
       </div>
+      <p class="mt-2 text-xs text-gray-600">The result may be smaller when the images are already small, or larger only when the requested limit cannot be reached without extreme quality loss. In Individual mode, this target applies to each PDF.</p>
     </div>
   </div>
 </div>
