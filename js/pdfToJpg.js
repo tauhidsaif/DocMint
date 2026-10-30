@@ -42,7 +42,7 @@ if (!dzPdf || !inpPdf) {
     if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
       showAlert("Select a valid PDF file.", "error");
       inpPdf.value = "";
-      pdfLabel.textContent = "Drop a PDF here or click to choose";
+      pdfLabel.textContent = pdfFile?.name || "Drop a PDF here or click to choose";
       return;
     }
 
