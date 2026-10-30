@@ -1,4 +1,4 @@
-import { wireDrop, nextFrame, showAlert } from "./main.js";
+import { wireDrop, nextFrame, showAlert, ensurePdfLib, ensureJsZip } from "./main.js";
 
 console.log("Loaded: Images → PDF Tool (Measured Target Size)");
 
@@ -15,7 +15,7 @@ const desiredUnitSelect = document.getElementById("desired-unit");
 
 const MIN_TARGET_QUALITY = 0.08;
 const MAX_TARGET_QUALITY = 0.97;
-const TARGET_SEARCH_STEPS = 12;
+const TARGET_SEARCH_STEPS = 7;
 
 let btnImgsDownload = null;
 let selectedImages = [];
@@ -77,13 +77,12 @@ if (!dzImgs || !inpImgs) {
       return;
     }
 
-    if (!window.PDFLib?.PDFDocument) {
-      showAlert("PDF-LIB not loaded. Check your script imports.", "error");
-      return;
-    }
-
     btnImgsConvert.disabled = true;
     try {
+      await ensurePdfLib();
+      if (!window.PDFLib?.PDFDocument) {
+        throw new Error("The PDF library did not initialize correctly.");
+      }
       const pdfMode =
         document.querySelector('input[name="pdf-mode"]:checked')?.value || "combined";
 
@@ -301,7 +300,7 @@ async function optimizePdfToTarget(images, targetBytes, pageSettings) {
   let downscaleAttempts = 0;
   let lastTooLargeScale = null;
 
-  while (lowQuality.blob.size > targetBytes && scale > 0.04 && downscaleAttempts < 12) {
+  while (lowQuality.blob.size > targetBytes && scale > 0.04 && downscaleAttempts < 6) {
     lastTooLargeScale = scale;
     const ratio = Math.sqrt(targetBytes / lowQuality.blob.size) * 0.9;
     const nextScale = Math.max(0.04, scale * Math.min(0.9, ratio));
@@ -319,7 +318,7 @@ async function optimizePdfToTarget(images, targetBytes, pageSettings) {
   if (lastTooLargeScale !== null) {
     let fittingScale = scale;
     let oversizedScale = lastTooLargeScale;
-    for (let attempt = 0; attempt < 8; attempt++) {
+    for (let attempt = 0; attempt < 5; attempt++) {
       const middleScale = (fittingScale + oversizedScale) / 2;
       const candidate = await measure(MIN_TARGET_QUALITY, middleScale);
       if (candidate.blob.size <= targetBytes) {
@@ -458,7 +457,6 @@ async function generateCombinedPDF() {
 }
 
 async function generateIndividualPDFs() {
-  const JSZip = window.JSZip;
   const downloadMethod =
     document.querySelector('input[name="download-method"]:checked')?.value || "separate";
   const targetBytes = readTargetBytes();
@@ -501,7 +499,7 @@ async function generateIndividualPDFs() {
   }
 
   if (downloadMethod === "zip") {
-    if (!JSZip) throw new Error("JSZip library not loaded. Cannot create ZIP file.");
+    const JSZip = await ensureJsZip();
 
     imgStatus.innerHTML =
       '<div class="text-center px-3 py-3"><span class="text-violet-600 font-semibold">Creating ZIP file…</span></div>';
