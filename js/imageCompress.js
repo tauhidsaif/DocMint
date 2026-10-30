@@ -198,6 +198,12 @@ async function processImages() {
 }
 
 async function compressToMaxSize(sourceCanvas, targetBytes) {
+  // Fast path: keep the best quality immediately when it already fits.
+  const highQualityBlob = await canvasToBlob(sourceCanvas, 0.92);
+  if (highQualityBlob.size <= targetBytes) {
+    return { blob: highQualityBlob, reached: true, quality: 0.92, scale: 1 };
+  }
+
   let workingCanvas = sourceCanvas;
   let scale = 1;
   let lowQualityBlob = await canvasToBlob(workingCanvas, 0.12);
