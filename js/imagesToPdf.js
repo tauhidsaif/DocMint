@@ -367,6 +367,25 @@ async function optimizePdfToTarget(images, targetBytes, pageSettings) {
   return { ...smallestCandidate, result: "unreachable" };
 }
 
+function makeUniqueFileName(fileName, usedNames) {
+  if (!usedNames.has(fileName)) {
+    usedNames.add(fileName);
+    return fileName;
+  }
+
+  const dot = fileName.lastIndexOf(".");
+  const base = dot > 0 ? fileName.slice(0, dot) : fileName;
+  const extension = dot > 0 ? fileName.slice(dot) : "";
+  let counter = 2;
+  let candidate = base + " (" + counter + ")" + extension;
+  while (usedNames.has(candidate)) {
+    counter++;
+    candidate = base + " (" + counter + ")" + extension;
+  }
+  usedNames.add(candidate);
+  return candidate;
+}
+
 function targetResultMessage(result, targetBytes) {
   const actual = result.blob.size;
   const targetText = formatBytes(targetBytes);
@@ -480,6 +499,7 @@ async function generateIndividualPDFs() {
   const pageSettings = getPageSettings();
   const pdfBlobs = [];
   const reports = [];
+  const usedFileNames = new Set();
 
   for (let index = 0; index < selectedImages.length; index++) {
     const file = selectedImages[index];
@@ -498,7 +518,10 @@ async function generateIndividualPDFs() {
       result = { blob, result: "original" };
     }
 
-    const fileName = file.name.replace(/\.[^/.]+$/, "") + ".pdf";
+    const fileName = makeUniqueFileName(
+      file.name.replace(/\.[^/.]+$/, "") + ".pdf",
+      usedFileNames
+    );
     pdfBlobs.push({ blob: result.blob, name: fileName });
 
     const detail = targetBytes
