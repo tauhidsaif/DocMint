@@ -100,7 +100,7 @@ if (!dzImgs || !inpImgs) {
     } catch (error) {
       console.error("Images to PDF failed:", error);
       imgStatus.textContent = "Could not create the PDF: " + (error?.message || "Unknown error");
-      showAlert("PDF creation failed. Check the console for details.", "error");
+      showAlert(error?.message || "PDF creation failed.", "error");
     } finally {
       isConverting = false;
       btnImgsConvert.disabled = false;
