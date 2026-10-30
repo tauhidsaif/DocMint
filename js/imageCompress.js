@@ -210,6 +210,7 @@ async function compressToMaxSize(sourceCanvas, targetBytes) {
   }
 
   if (lowQualityBlob.size > targetBytes) {
+    if (workingCanvas !== sourceCanvas) workingCanvas.width = workingCanvas.height = 0;
     return { blob: lowQualityBlob, reached: false, quality: 0.12, scale };
   }
 
