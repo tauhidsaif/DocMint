@@ -10,9 +10,10 @@ function showTool(id) {
   document.getElementById("home-section")?.classList.add("hidden"); // ⬅️ add this
   const el = document.getElementById(id);
   if (el) el.classList.remove("hidden");
-  buttons.forEach((b) =>
-    b.setAttribute("aria-current", b.dataset.target === id)
-  );
+  buttons.forEach((b) => {
+    if (b.dataset.target === id) b.setAttribute("aria-current", "page");
+    else b.removeAttribute("aria-current");
+  });
   content?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 // Go Home function (works for logo, title, and subtitle)
@@ -46,13 +47,75 @@ buttons.forEach((b) => {
 // ---------- Search filter ----------
 const search = document.getElementById("search");
 if (search) {
+  const emptyState = document.createElement("p");
+  emptyState.id = "tool-search-empty";
+  emptyState.className = "hidden px-3 py-4 text-center text-sm text-gray-500";
+  emptyState.textContent = "No tools match your search.";
+  document.getElementById("toolList")?.appendChild(emptyState);
   search.addEventListener("input", () => {
-    const q = search.value.toLowerCase();
-    buttons.forEach((b) => {
-      const t = b.textContent.toLowerCase();
-      b.classList.toggle("hidden", !t.includes(q));
+    const query = search.value.trim().toLowerCase();
+    let visible = 0;
+    buttons.forEach((button) => {
+      const matches = button.textContent.toLowerCase().includes(query);
+      button.classList.toggle("hidden", !matches);
+      if (matches) visible++;
     });
+    emptyState.classList.toggle("hidden", visible > 0);
   });
+}
+
+// ---------- Lazy-loaded external libraries ----------
+const externalScriptPromises = new Map();
+
+export function loadExternalScript(src, globalName) {
+  if (globalName && window[globalName]) return Promise.resolve(window[globalName]);
+  if (!externalScriptPromises.has(src)) {
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.crossOrigin = "anonymous";
+    const promise = new Promise((resolve, reject) => {
+      script.onload = () => {
+        const library = globalName ? window[globalName] : true;
+        if (globalName && !library) {
+          externalScriptPromises.delete(src);
+          script.remove();
+          reject(new Error("The library loaded but did not expose " + globalName + "."));
+          return;
+        }
+        resolve(library);
+      };
+      script.onerror = () => {
+        externalScriptPromises.delete(src);
+        script.remove();
+        reject(new Error("Could not load a required library. Check your internet connection and try again."));
+      };
+    });
+    externalScriptPromises.set(src, promise);
+    document.head.appendChild(script);
+  }
+  return externalScriptPromises.get(src);
+}
+
+export async function ensurePdfJs() {
+  const library = await loadExternalScript(
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js", "pdfjsLib"
+  );
+  library.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
+  return library;
+}
+
+export function ensurePdfLib() {
+  return loadExternalScript(
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js", "PDFLib"
+  );
+}
+
+export function ensureJsZip() {
+  return loadExternalScript(
+    "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js", "JSZip"
+  );
 }
 
 // ---------- Helpers (shared utilities) ----------
@@ -73,34 +136,44 @@ export const escapeHtml = (s) =>
 
 // ---------- Drag & Drop (shared) ----------
 export function wireDrop(dz, input) {
-  if (!dz || !input) return; // prevent null errors
+  if (!dz || !input) return;
+  dz.setAttribute("role", "button");
+  dz.setAttribute("tabindex", "0");
+  if (!dz.hasAttribute("aria-label")) dz.setAttribute("aria-label", "Choose files or drop them here");
 
-  // Click to open file selector
-  dz.addEventListener("click", () => input.click());
+  dz.addEventListener("click", (event) => {
+    if (event.target !== input) input.click();
+  });
+  dz.addEventListener("keydown", (event) => {
+    if (event.target === dz && (event.key === "Enter" || event.key === " ")) {
+      event.preventDefault();
+      input.click();
+    }
+  });
 
-  // Highlight on drag
-  ["dragenter", "dragover"].forEach((eName) =>
-    dz.addEventListener(eName, (e) => {
-      e.preventDefault();
+  ["dragenter", "dragover"].forEach((eventName) =>
+    dz.addEventListener(eventName, (event) => {
+      event.preventDefault();
       dz.classList.add("bg-emerald-100", "border-emerald-500");
     })
   );
-
-  // Remove highlight when leaving
-  ["dragleave", "drop"].forEach((eName) =>
-    dz.addEventListener(eName, (e) => {
-      e.preventDefault();
-      dz.classList.remove("bg-emerald-100", "border-emerald-500");
+  ["dragleave", "drop"].forEach((eventName) =>
+    dz.addEventListener(eventName, (event) => {
+      event.preventDefault();
+      if (eventName === "drop" || event.target === dz) {
+        dz.classList.remove("bg-emerald-100", "border-emerald-500");
+      }
     })
   );
-
-  // Handle file drop
-  dz.addEventListener("drop", (e) => {
-    e.preventDefault();
-    const files = e.dataTransfer?.files;
-    if (files?.length) {
+  dz.addEventListener("drop", (event) => {
+    const files = event.dataTransfer?.files;
+    if (!files?.length) return;
+    try {
       input.files = files;
       input.dispatchEvent(new Event("change", { bubbles: true }));
+    } catch (error) {
+      console.error("Could not read dropped files:", error);
+      showAlert("Your browser could not read those dropped files. Please browse for them instead.", "error");
     }
   });
 }
