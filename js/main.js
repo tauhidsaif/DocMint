@@ -78,6 +78,12 @@ if (search) {
   });
 }
 
+// Announce tool progress and result messages to assistive technology.
+document.querySelectorAll(".status-box").forEach((status) => {
+  status.setAttribute("role", "status");
+  status.setAttribute("aria-live", "polite");
+});
+
 // ---------- Lazy-loaded external libraries ----------
 const externalScriptPromises = new Map();
 
