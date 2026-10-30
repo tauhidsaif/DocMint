@@ -50,6 +50,14 @@ buttons.forEach((b) => {
   });
 });
 
+// Quick-start cards on the home screen
+document.querySelectorAll("[data-quick-target]").forEach((card) => {
+  card.addEventListener("click", () => {
+    const target = card.dataset.quickTarget;
+    if (target) showTool(target);
+  });
+});
+
 // ---------- Search filter ----------
 const search = document.getElementById("search");
 if (search) {
