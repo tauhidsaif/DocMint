@@ -177,3 +177,16 @@ button:disabled { cursor: not-allowed; }
     transition-duration: .01ms !important;
   }
 }
+
+.page-actions button:disabled {
+  cursor: not-allowed;
+  opacity: .3;
+}
+.page-card {
+  touch-action: pan-y;
+}
+.page-card canvas {
+  background: linear-gradient(135deg, #f8fbf9, #eef5f0);
+}
+#toolList { gap: .55rem; }
+#search::placeholder { color: #91a39a; }
