@@ -111,6 +111,7 @@ if (!dzPdf || !inpPdf) {
       showAlert("PDF converted into " + pdfGenerated.length + " JPG images.", "success");
     } catch (error) {
       console.error("PDF to JPG conversion failed:", error);
+      btnPdfZip.disabled = pdfGenerated.length === 0;
       pdfStatus.textContent = "Conversion failed: " + (error?.message || "Unknown error");
       showAlert("Could not convert this PDF. Try a smaller PDF or another file.", "error");
     } finally {
