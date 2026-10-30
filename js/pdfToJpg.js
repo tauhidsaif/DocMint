@@ -1,6 +1,13 @@
-import { wireDrop, nextFrame, toMB, showAlert } from "./main.js";
+import {
+  wireDrop,
+  nextFrame,
+  toMB,
+  showAlert,
+  ensurePdfJs,
+  ensureJsZip
+} from "./main.js";
 
-console.log("Loaded: PDF → JPG Tool (Low-Lag Preview + HQ Download)");
+console.log("Loaded: PDF → JPG Tool");
 
 const dzPdf = document.getElementById("dz-pdf");
 const inpPdf = document.getElementById("inp-pdf");
@@ -10,193 +17,252 @@ const pdfOut = document.getElementById("pdf-output");
 const btnPdfConvert = document.getElementById("btn-pdf-convert");
 const btnPdfZip = document.getElementById("btn-pdf-zip");
 const btnPdfReset = document.getElementById("btn-pdf-reset");
-const pdfConcurrency = document.getElementById("pdf-concurrency");
+const pdfLabel = document.getElementById("dz-pdf-label");
 
 let pdfFile = null;
 let pdfGenerated = [];
+const objectUrls = new Set();
+const MAX_EXPORT_WIDTH = 2200;
+const MAX_EXPORT_HEIGHT = 3100;
+const PREVIEW_WIDTH = 520;
+const PREVIEW_HEIGHT = 720;
 
 if (!dzPdf || !inpPdf) {
-  console.warn("⚠️ PDF → JPG elements missing in HTML.");
+  console.warn("PDF → JPG elements missing in HTML.");
 } else {
   wireDrop(dzPdf, inpPdf);
 
   inpPdf.addEventListener("change", () => {
-    const f = inpPdf.files?.[0];
-    const label = document.getElementById("dz-pdf-label");
-    if (!f) {
-      label.textContent = "Drop a PDF here or click to choose";
-      return;
-    }
-    if (f.type !== "application/pdf" && !f.name.toLowerCase().endsWith(".pdf")) {
-      showAlert("Select a valid PDF file.", "error");
-      inpPdf.value = "";
-      label.textContent = "Drop a PDF here or click to choose";
+    const file = inpPdf.files?.[0];
+    if (!file) {
+      pdfLabel.textContent = "Drop a PDF here or click to choose";
       return;
     }
 
-    pdfFile = f;
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      showAlert("Select a valid PDF file.", "error");
+      inpPdf.value = "";
+      pdfLabel.textContent = "Drop a PDF here or click to choose";
+      return;
+    }
+
+    clearGenerated();
+    pdfFile = file;
     ctrlPdf.classList.remove("hidden");
-    pdfStatus.innerHTML = `<span class='text-emerald-700 font-semibold'>${f.name}</span> • ${toMB(f.size)}`;
-    label.textContent = f.name;
+    pdfStatus.textContent = file.name + " · " + toMB(file.size);
+    pdfLabel.textContent = file.name;
     pdfOut.innerHTML = "";
-    pdfGenerated = [];
     btnPdfZip.disabled = true;
   });
 
   btnPdfReset?.addEventListener("click", () => {
+    if (btnPdfConvert.disabled) return;
     pdfFile = null;
+    clearGenerated();
     pdfOut.innerHTML = "";
     ctrlPdf.classList.add("hidden");
     pdfStatus.textContent = "";
-    pdfGenerated = [];
     btnPdfZip.disabled = true;
     inpPdf.value = "";
-    document.getElementById("dz-pdf-label").textContent =
-      "Drop a PDF here or click to choose";
+    pdfLabel.textContent = "Drop a PDF here or click to choose";
   });
 
   btnPdfConvert?.addEventListener("click", async () => {
-    if (!pdfFile) return showAlert("Choose a PDF file first.", "warning");
-    if (!window["pdfjsLib"]) return showAlert("pdf.js not loaded properly.", "error");
+    if (!pdfFile) {
+      showAlert("Choose a PDF file first.", "warning");
+      return;
+    }
 
-    const concurrency = Math.max(1, Math.min(4, parseInt(pdfConcurrency?.value || "2", 10)));
-    const dpr = window.devicePixelRatio || 1;
-
-    pdfStatus.innerHTML = `<div class='animate-pulse text-emerald-600'>Reading PDF…</div>`;
-    pdfOut.innerHTML = "";
-    pdfGenerated = [];
+    const sourceFile = pdfFile;
+    btnPdfConvert.disabled = true;
     btnPdfZip.disabled = true;
+    btnPdfReset.disabled = true;
+    inpPdf.disabled = true;
+    clearGenerated();
+    pdfOut.innerHTML = "";
 
+    let documentProxy = null;
     try {
-      const ab = await pdfFile.arrayBuffer();
-      const doc = await pdfjsLib.getDocument({ data: ab }).promise;
-      const total = doc.numPages;
-      pdfStatus.innerHTML = `<div class='text-emerald-600 font-medium'>Loaded ${total} page(s)…</div>`;
+      pdfStatus.textContent = "Loading PDF tools…";
+      const pdfjsLib = await ensurePdfJs();
+      pdfStatus.textContent = "Reading " + sourceFile.name + "…";
 
-      const pages = Array.from({ length: total }, (_, i) => i + 1);
-      const results = await runWithConcurrency(pages, concurrency, async (pageNum, idx) => {
-        pdfStatus.innerHTML = `<div class='text-gray-700'>Rendering preview <span class='text-emerald-600 font-semibold'>${pageNum}/${total}</span>…</div>`;
-        const result = await renderPreviewAndPrepareDownload(pageNum, doc, 600, 850, 2400, 3400, dpr);
-        pdfStatus.innerHTML = `<div class='text-emerald-700'>Rendered ${idx + 1}/${total}</div>`;
-        return result;
-      });
+      const data = new Uint8Array(await sourceFile.arrayBuffer());
+      documentProxy = await pdfjsLib.getDocument({ data }).promise;
+      const total = documentProxy.numPages;
 
-      const valid = results.filter((r) => !r.error).sort((a, b) => a.index - b.index);
-      pdfGenerated = valid.map((s) => ({ name: s.name, blob: s.blob }));
-      pdfStatus.innerHTML = `<div class='text-emerald-700 font-semibold'>✅ Done • ${pdfGenerated.length}/${total} converted</div>`;
+      if (!total) throw new Error("This PDF does not contain any pages.");
+
+      // Render one page at a time. This avoids holding multiple large canvases at once.
+      for (let pageNumber = 1; pageNumber <= total; pageNumber++) {
+        pdfStatus.textContent = "Converting page " + pageNumber + " of " + total + "…";
+        const result = await renderPage(pageNumber, documentProxy, sourceFile);
+        pdfGenerated.push({ name: result.name, blob: result.blob });
+
+        pdfStatus.textContent =
+          "Converted " + pageNumber + " of " + total + " pages · " +
+          pdfGenerated.length + " JPGs ready";
+        await nextFrame();
+      }
+
       btnPdfZip.disabled = pdfGenerated.length === 0;
-    } catch (err) {
-      console.error(err);
-      pdfStatus.innerHTML = `<div class='text-red-600 font-semibold'>❌ Error during conversion</div>`;
-showAlert("Failed to render PDF. Try a smaller scale or simpler file.", "error");    }
+      pdfStatus.textContent =
+        "Done · " + pdfGenerated.length + " page(s) converted from " + sourceFile.name;
+      showAlert("PDF converted into " + pdfGenerated.length + " JPG images.", "success");
+    } catch (error) {
+      console.error("PDF to JPG conversion failed:", error);
+      pdfStatus.textContent = "Conversion failed: " + (error?.message || "Unknown error");
+      showAlert("Could not convert this PDF. Try a smaller PDF or another file.", "error");
+    } finally {
+      try {
+        await documentProxy?.destroy?.();
+      } catch (error) {
+        console.warn("PDF cleanup warning:", error);
+      }
+      btnPdfConvert.disabled = false;
+      btnPdfReset.disabled = false;
+      inpPdf.disabled = false;
+    }
   });
-
-  async function renderPreviewAndPrepareDownload(i, doc, lowW, lowH, fullW, fullH, dpr) {
-    const card = document.createElement("div");
-    card.className =
-      "bg-white/90 border-2 border-emerald-100 rounded-2xl p-4 shadow-md hover:shadow-2xl transition-all duration-300 animate-fade-in relative overflow-hidden";
-    card.style.background = "linear-gradient(135deg, #f9fafb 0%, #ffffff 100%)";
-
-    const skeleton = document.createElement("div");
-    skeleton.className =
-      "rounded-xl h-40 bg-gradient-to-r from-emerald-50 via-white to-emerald-50 animate-pulse";
-    card.appendChild(skeleton);
-
-    const info = document.createElement("div");
-    info.className = "mt-3 flex justify-between text-xs text-gray-600 items-center";
-
-    const meta = document.createElement("div");
-    meta.innerHTML = `<span class='text-gray-700 font-semibold'>Page ${i}</span>`;
-
-    const link = document.createElement("a");
-    link.textContent = "Rendering…";
-    link.className = "pointer-events-none text-gray-400 font-medium";
-
-    info.append(meta, link);
-    card.append(info);
-    pdfOut.appendChild(card);
-    await nextFrame();
-
-    const page = await doc.getPage(i);
-
-    // Low-res preview render
-    const lowViewport = page.getViewport({
-      scale: (lowW / page.getViewport({ scale: 1 }).width) * dpr,
-    });
-    const lowCanvas = document.createElement("canvas");
-    lowCanvas.width = lowViewport.width;
-    lowCanvas.height = lowViewport.height;
-    const lowCtx = lowCanvas.getContext("2d", { alpha: false });
-    await page.render({ canvasContext: lowCtx, viewport: lowViewport }).promise;
-
-    const lowUrl = lowCanvas.toDataURL("image/jpeg", 0.4);
-    const img = new Image();
-    img.src = lowUrl;
-    img.className =
-      "rounded-xl shadow-md hover:shadow-xl hover:scale-[1.02] transition-transform duration-300 border border-gray-200";
-    await img.decode().catch(() => {});
-    card.replaceChild(img, skeleton);
-
-    // Full-quality download (in background)
-    const fullViewport = page.getViewport({
-      scale: (fullW / page.getViewport({ scale: 1 }).width) * dpr,
-    });
-    const fullCanvas = new OffscreenCanvas(fullViewport.width, fullViewport.height);
-    const fullCtx = fullCanvas.getContext("2d", { alpha: false });
-    await page.render({ canvasContext: fullCtx, viewport: fullViewport }).promise;
-    const fullBlob = await fullCanvas.convertToBlob({ type: "image/jpeg", quality: 1.0 });
-
-    const downloadName = `${(pdfFile?.name || "page").replace(/\.pdf$/i, "")}_${i}.jpg`;
-    link.href = URL.createObjectURL(fullBlob);
-    link.download = downloadName;
-    link.textContent = "Download JPG";
-    link.className =
-      "text-emerald-700 hover:underline hover:text-emerald-800 font-semibold transition-colors duration-300";
-    meta.innerHTML = `<span class='text-gray-700'>${Math.round(fullViewport.width)}×${Math.round(fullViewport.height)} HQ</span>`;
-
-    page.cleanup?.();
-    lowCanvas.width = lowCanvas.height = 0;
-    fullCanvas.width = fullCanvas.height = 0;
-    await nextFrame();
-
-    return { index: i, name: downloadName, blob: fullBlob };
-  }
 
   btnPdfZip?.addEventListener("click", async () => {
     if (!pdfGenerated.length) return;
-    pdfStatus.innerHTML = `<div class='text-blue-600 font-medium animate-pulse'>Zipping…</div>`;
-    const zip = new JSZip();
-    for (const f of pdfGenerated) zip.file(f.name, f.blob);
-    const blob = await zip.generateAsync({ type: "blob" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `${(pdfFile?.name || "output").replace(/\.pdf$/i, "")}_jpg.zip`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 8000);
-    pdfStatus.innerHTML = `<div class='text-blue-700 font-semibold'>📦 ZIP ready</div>`;
-  });
 
-  async function runWithConcurrency(items, limit, worker) {
-    const results = [];
-    const queue = [...items];
-    let active = 0;
+    btnPdfZip.disabled = true;
+    try {
+      pdfStatus.textContent = "Loading ZIP tools…";
+      const JSZip = await ensureJsZip();
+      const zip = new JSZip();
+      for (const file of pdfGenerated) zip.file(file.name, file.blob);
 
-    return new Promise((resolve) => {
-      const next = async () => {
-        if (!queue.length && active === 0) return resolve(results);
-        while (active < limit && queue.length) {
-          const item = queue.shift();
-          active++;
-          worker(item, results.length)
-            .then((r) => results.push(r))
-            .catch((err) => results.push({ error: err }))
-            .finally(() => {
-              active--;
-              next();
-            });
+      pdfStatus.textContent = "Creating ZIP…";
+      const blob = await zip.generateAsync(
+        { type: "blob" },
+        metadata => {
+          pdfStatus.textContent = "Creating ZIP… " + Math.round(metadata.percent) + "%";
         }
-      };
-      next();
-    });
-  }
+      );
+      const url = createObjectUrl(blob);
+      triggerDownload(url, safeBaseName(pdfFile?.name || "converted") + "_jpg.zip");
+      pdfStatus.textContent = "ZIP downloaded · " + toMB(blob.size);
+      showAlert("ZIP file is ready.", "success");
+    } catch (error) {
+      console.error("PDF to JPG ZIP failed:", error);
+      pdfStatus.textContent = "Could not create ZIP: " + (error?.message || "Unknown error");
+      showAlert("Could not create the ZIP file.", "error");
+    } finally {
+      btnPdfZip.disabled = pdfGenerated.length === 0;
+    }
+  });
+}
+
+async function renderPage(pageNumber, documentProxy, sourceFile) {
+  const page = await documentProxy.getPage(pageNumber);
+  const baseViewport = page.getViewport({ scale: 1 });
+
+  const previewScale = Math.min(
+    PREVIEW_WIDTH / baseViewport.width,
+    PREVIEW_HEIGHT / baseViewport.height
+  );
+  const previewViewport = page.getViewport({ scale: previewScale });
+  const previewCanvas = document.createElement("canvas");
+  previewCanvas.width = Math.max(1, Math.ceil(previewViewport.width));
+  previewCanvas.height = Math.max(1, Math.ceil(previewViewport.height));
+
+  const previewContext = previewCanvas.getContext("2d", { alpha: false });
+  if (!previewContext) throw new Error("Could not create an image preview.");
+  await page.render({ canvasContext: previewContext, viewport: previewViewport }).promise;
+
+  const previewBlob = await canvasToBlob(previewCanvas, "image/jpeg", 0.68);
+  const previewUrl = createObjectUrl(previewBlob);
+
+  const exportScale = Math.min(
+    MAX_EXPORT_WIDTH / baseViewport.width,
+    MAX_EXPORT_HEIGHT / baseViewport.height
+  );
+  const exportViewport = page.getViewport({ scale: exportScale });
+  const exportCanvas = document.createElement("canvas");
+  exportCanvas.width = Math.max(1, Math.ceil(exportViewport.width));
+  exportCanvas.height = Math.max(1, Math.ceil(exportViewport.height));
+
+  const exportContext = exportCanvas.getContext("2d", { alpha: false });
+  if (!exportContext) throw new Error("Could not create the JPG output.");
+  await page.render({ canvasContext: exportContext, viewport: exportViewport }).promise;
+
+  // 0.92 keeps text and document edges crisp without the huge files produced at quality 1.
+  const blob = await canvasToBlob(exportCanvas, "image/jpeg", 0.92);
+  const name = safeBaseName(sourceFile.name) + "_" +
+    String(pageNumber).padStart(3, "0") + ".jpg";
+
+  const card = document.createElement("article");
+  card.className =
+    "bg-white border border-emerald-100 rounded-2xl p-3 shadow-sm hover:shadow-md transition-shadow";
+  const preview = document.createElement("img");
+  preview.src = previewUrl;
+  preview.alt = "Preview of page " + pageNumber;
+  preview.loading = "lazy";
+  preview.className = "w-full aspect-[3/4] object-contain rounded-xl bg-gray-50";
+
+  const info = document.createElement("div");
+  info.className = "mt-3 flex items-center justify-between gap-2 text-xs";
+  const title = document.createElement("span");
+  title.className = "font-semibold text-gray-700";
+  title.textContent = "Page " + pageNumber;
+  const size = document.createElement("span");
+  size.className = "text-gray-500";
+  size.textContent = toMB(blob.size);
+
+  const link = document.createElement("a");
+  link.href = createObjectUrl(blob);
+  link.download = name;
+  link.className =
+    "mt-3 flex w-full items-center justify-center rounded-xl bg-emerald-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors";
+  link.textContent = "Download JPG";
+
+  info.append(title, size);
+  card.append(preview, info, link);
+  pdfOut.appendChild(card);
+
+  previewCanvas.width = previewCanvas.height = 0;
+  exportCanvas.width = exportCanvas.height = 0;
+  page.cleanup?.();
+
+  return { index: pageNumber, name, blob };
+}
+
+function canvasToBlob(canvas, type, quality) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(blob => {
+      if (blob) resolve(blob);
+      else reject(new Error("The browser could not encode this page."));
+    }, type, quality);
+  });
+}
+
+function safeBaseName(name) {
+  return String(name)
+    .replace(/\.pdf$/i, "")
+    .replace(/[\\/:*?"<>|]+/g, "_")
+    .slice(0, 90) || "converted";
+}
+
+function createObjectUrl(blob) {
+  const url = URL.createObjectURL(blob);
+  objectUrls.add(url);
+  return url;
+}
+
+function triggerDownload(url, name) {
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = name;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+}
+
+function clearGenerated() {
+  for (const url of objectUrls) URL.revokeObjectURL(url);
+  objectUrls.clear();
+  pdfGenerated = [];
 }
