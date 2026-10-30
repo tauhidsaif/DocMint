@@ -135,6 +135,7 @@ async function processImages() {
 
   let failures = 0;
   let overTarget = 0;
+  const usedOutputNames = new Set();
 
   try {
     for (let index = 0; index < compressFiles.length; index++) {
@@ -164,7 +165,10 @@ async function processImages() {
         if (targetBytes > 0 && result.blob.size > targetBytes) overTarget++;
 
         const url = createObjectUrl(result.blob);
-        const outputName = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+        const outputName = makeUniqueFileName(
+          file.name.replace(/\.[^.]+$/, "") + ".jpg",
+          usedOutputNames
+        );
         compressList.appendChild(
           makeResultCard(file, scaled.newW, scaled.newH, result, targetBytes, url, outputName)
         );
@@ -403,6 +407,25 @@ async function downloadZip() {
     btnCompressReset.disabled = false;
     inpCompress.disabled = false;
   }
+}
+
+function makeUniqueFileName(fileName, usedNames) {
+  if (!usedNames.has(fileName)) {
+    usedNames.add(fileName);
+    return fileName;
+  }
+
+  const dot = fileName.lastIndexOf(".");
+  const base = dot > 0 ? fileName.slice(0, dot) : fileName;
+  const extension = dot > 0 ? fileName.slice(dot) : "";
+  let counter = 2;
+  let candidate = base + " (" + counter + ")" + extension;
+  while (usedNames.has(candidate)) {
+    counter++;
+    candidate = base + " (" + counter + ")" + extension;
+  }
+  usedNames.add(candidate);
+  return candidate;
 }
 
 function formatBytes(bytes) {
