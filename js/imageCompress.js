@@ -130,6 +130,7 @@ async function processImages() {
   btnCompress.disabled = true;
   btnCompressReset.disabled = true;
   btnCompressZip.disabled = true;
+  inpCompress.disabled = true;
   clearOutput();
   renderInputList();
 
@@ -189,6 +190,7 @@ async function processImages() {
   } finally {
     btnCompress.disabled = false;
     btnCompressReset.disabled = false;
+    inpCompress.disabled = false;
   }
 }
 
@@ -367,6 +369,8 @@ async function downloadZip() {
   if (!compressedResults.length) return;
 
   btnCompressZip.disabled = true;
+  btnCompressReset.disabled = true;
+  inpCompress.disabled = true;
   try {
     compressStatus.textContent = "Loading ZIP tools…";
     const JSZip = await ensureJsZip();
@@ -393,6 +397,8 @@ async function downloadZip() {
     showAlert("Could not create the ZIP file.", "error");
   } finally {
     btnCompressZip.disabled = compressedResults.length === 0;
+    btnCompressReset.disabled = false;
+    inpCompress.disabled = false;
   }
 }
 
