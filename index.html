@@ -468,35 +468,88 @@
 
       <!-- Main content -->
       <section id="content" class="space-y-8 min-w-0">
-        <section id="home-section">
-        <div class="rounded-3xl glass-effect border-2 border-emerald-100 p-10 shadow-2xl animate-fade-in gradient-bg">
-          <h2 class="text-4xl font-bold bg-gradient-to-r from-emerald-600 via-green-600 to-emerald-500 bg-clip-text text-transparent mb-4">
-            Your documents, handled beautifully.
-          </h2>
-          <p class="text-gray-700 text-lg leading-relaxed mb-6">
-            Convert, organize and compress files in a clean workspace. Your files stay on your device.
-          </p>
-          <div class="flex flex-wrap gap-3">
-            <span class="feature-badge px-5 py-2.5 bg-white rounded-full text-sm font-semibold text-emerald-600 shadow-md border-2 border-emerald-100 flex items-center gap-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-              </svg>
-              100% Private
-            </span>
-            <span class="feature-badge px-5 py-2.5 bg-white rounded-full text-sm font-semibold text-emerald-600 shadow-md border-2 border-emerald-100 flex items-center gap-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-              </svg>
-              No Upload Required
-            </span>
-            <span class="feature-badge px-5 py-2.5 bg-white rounded-full text-sm font-semibold text-emerald-600 shadow-md border-2 border-emerald-100 flex items-center gap-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
-              </svg>
-              No account needed
-            </span>
+        <section id="home-section" class="space-y-7">
+          <div class="docmint-hero rounded-3xl border p-7 sm:p-10 animate-fade-in">
+            <div class="docmint-hero-copy">
+              <div class="docmint-eyebrow">
+                <span class="docmint-eyebrow-dot"></span>
+                YOUR EVERYDAY FILE TOOLKIT
+              </div>
+              <h2 class="text-4xl sm:text-5xl font-bold mb-5">
+                Less file fuss.<br /><span>More done.</span>
+              </h2>
+              <p class="text-lg leading-relaxed mb-7">
+                Convert, compress and organize documents in a few clicks. No account, no uploads, no clutter.
+              </p>
+              <div class="flex flex-wrap gap-2.5">
+                <span class="feature-badge px-4 py-2 bg-white rounded-full text-sm font-semibold flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                  Private by design
+                </span>
+                <span class="feature-badge px-4 py-2 bg-white rounded-full text-sm font-semibold flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                  No uploads
+                </span>
+                <span class="feature-badge px-4 py-2 bg-white rounded-full text-sm font-semibold flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                  No account
+                </span>
+              </div>
+            </div>
+
+            <div class="docmint-hero-art" aria-hidden="true">
+              <div class="docmint-glow"></div>
+              <div class="docmint-file-stack docmint-file-stack-back"></div>
+              <div class="docmint-file-stack docmint-file-stack-mid"></div>
+              <div class="docmint-document">
+                <div class="docmint-document-top">
+                  <div class="docmint-pdf-icon">PDF</div>
+                  <div><strong>Document.pdf</strong><small>Ready to work</small></div>
+                  <span class="docmint-ready-dot"></span>
+                </div>
+                <div class="docmint-document-preview">
+                  <span class="docmint-preview-heading"></span>
+                  <span></span><span></span><span class="short"></span>
+                  <div class="docmint-preview-picture"></div>
+                  <span></span><span class="short"></span>
+                </div>
+                <div class="docmint-document-footer"><span>DOCMINT WORKSPACE</span><b>✓</b></div>
+              </div>
+              <div class="docmint-float-chip"><span>✓</span> Files stay on your device</div>
+            </div>
           </div>
-        </div>
+
+          <div class="docmint-quick-heading">
+            <div><span>GET STARTED</span><h3>What would you like to do?</h3></div>
+            <p>Choose a tool. Your files are processed right in your browser.</p>
+          </div>
+
+          <div class="docmint-quick-grid">
+            <button type="button" class="docmint-quick-card" data-quick-target="tool-pdf-to-jpg">
+              <span class="docmint-quick-icon quick-emerald"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></span>
+              <span class="docmint-quick-title">PDF to JPG</span>
+              <span class="docmint-quick-desc">Turn every PDF page into an image.</span>
+              <span class="docmint-quick-arrow">Open tool <b>↗</b></span>
+            </button>
+            <button type="button" class="docmint-quick-card" data-quick-target="tool-images-to-pdf">
+              <span class="docmint-quick-icon quick-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/><circle cx="9" cy="9" r="1.5"/><path d="m5 17 5-5 3 3 2-2 4 4"/></svg></span>
+              <span class="docmint-quick-title">Images to PDF</span>
+              <span class="docmint-quick-desc">Combine images into a clean PDF.</span>
+              <span class="docmint-quick-arrow">Open tool <b>↗</b></span>
+            </button>
+            <button type="button" class="docmint-quick-card" data-quick-target="tool-merge-pdf">
+              <span class="docmint-quick-icon quick-violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></span>
+              <span class="docmint-quick-title">Merge PDFs</span>
+              <span class="docmint-quick-desc">Bring multiple documents together.</span>
+              <span class="docmint-quick-arrow">Open tool <b>↗</b></span>
+            </button>
+            <button type="button" class="docmint-quick-card" data-quick-target="tool-organize-pdf">
+              <span class="docmint-quick-icon quick-amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="6" rx="1.5"/><rect x="4" y="14" width="7" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg></span>
+              <span class="docmint-quick-title">Organize pages</span>
+              <span class="docmint-quick-desc">Reorder or remove PDF pages.</span>
+              <span class="docmint-quick-arrow">Open tool <b>↗</b></span>
+            </button>
+          </div>
         </section>
 
 
