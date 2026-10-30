@@ -1,6 +1,12 @@
-import { wireDrop, nextFrame, showAlert } from "./main.js";
+import {
+  wireDrop,
+  nextFrame,
+  showAlert,
+  ensurePdfJs,
+  ensurePdfLib
+} from "./main.js";
 
-console.log("Loaded: PDF Organizer Tool (DocMint Style ✨)");
+console.log("Loaded: PDF Organizer Tool");
 
 const dzOrg = document.getElementById("dz-org");
 const inpOrg = document.getElementById("inp-org");
@@ -11,166 +17,264 @@ const btnOrgSave = document.getElementById("btn-org-save");
 const btnOrgReset = document.getElementById("btn-org-reset");
 
 let pdfDoc = null;
-let pages = [];
+let loading = false;
+let saving = false;
+let draggedPage = null;
 
-// === Drag & Drop Setup ===
-wireDrop(dzOrg, inpOrg);
+if (dzOrg && inpOrg) {
+  wireDrop(dzOrg, inpOrg);
+  setupReordering();
 
-inpOrg.addEventListener("change", async () => {
-  const file = inpOrg.files[0];
-  if (!file) return;
+  inpOrg.addEventListener("change", loadSelectedPdf);
+  btnOrgSave?.addEventListener("click", saveOrganizedPdf);
+  btnOrgReset?.addEventListener("click", resetOrganizer);
+} else {
+  console.warn("PDF Organizer elements not found.");
+}
 
-  orgStatus.innerHTML = `<div class="text-emerald-600 font-medium animate-pulse">📄 Loading PDF...</div>`;
-  ctrlOrg.classList.add("hidden");
-  orgPages.innerHTML = "";
-  pages = [];
+async function loadSelectedPdf() {
+  const file = inpOrg.files?.[0];
+  if (!file || loading) return;
 
-  const pdfData = new Uint8Array(await file.arrayBuffer());
-  pdfDoc = await pdfjsLib.getDocument({ data: pdfData }).promise;
-
-  orgStatus.innerHTML = `<div class="text-emerald-700 font-semibold">✅ Loaded ${pdfDoc.numPages} page(s)</div>`;
-  ctrlOrg.classList.remove("hidden");
-
-  for (let i = 1; i <= pdfDoc.numPages; i++) {
-    const page = await pdfDoc.getPage(i);
-    const viewport = page.getViewport({ scale: 0.3 });
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    await page.render({ canvasContext: ctx, viewport }).promise;
-
-    const div = document.createElement("div");
-    div.className =
-      "relative bg-white/90 border-2 border-emerald-100 rounded-2xl shadow-md hover:shadow-2xl cursor-move overflow-hidden group transition-all duration-300 hover:scale-[1.03] animate-fade-in";
-    div.draggable = true;
-    div.dataset.index = i - 1;
-
-    const number = document.createElement("div");
-    number.textContent = i;
-    number.className =
-      "absolute bottom-2 left-2 text-xs bg-emerald-600/80 text-white rounded-full w-6 h-6 flex items-center justify-center font-semibold shadow-md";
-
-    const delBtn = document.createElement("button");
-    delBtn.innerHTML =
-      '<svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>';
-    delBtn.className =
-      "absolute top-2 right-2 bg-gradient-to-r from-red-500 to-red-600 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-red-500/30";
-    delBtn.onclick = (e) => {
-      e.stopPropagation();
-      div.classList.add("scale-95", "opacity-0");
-      setTimeout(() => {
-        div.remove();
-        pages = pages.filter((p) => p !== div);
-        orgStatus.innerHTML = `<div class='text-red-600 font-medium'>🗑️ Page removed (${pages.length} left)</div>`;
-      }, 200);
-    };
-
-    div.append(canvas, delBtn, number);
-    orgPages.appendChild(div);
-    pages.push(div);
-
-    await nextFrame();
+  if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+    showAlert("Select a valid PDF file.", "error");
+    inpOrg.value = "";
+    return;
   }
 
-  setupDragAndDrop();
-});
+  loading = true;
+  btnOrgSave.disabled = true;
+  btnOrgReset.disabled = true;
+  ctrlOrg.classList.add("hidden");
+  orgPages.innerHTML = "";
+  await disposePdf();
 
-// === Stable, Clean Drag & Drop ===
-function setupDragAndDrop() {
-  let dragItem = null;
-  const placeholder = document.createElement("div");
-  placeholder.className =
-    "border-2 border-dashed border-emerald-400 rounded-2xl h-32 my-2 opacity-70 transition-all duration-150";
+  try {
+    orgStatus.textContent = "Loading PDF…";
+    const pdfjsLib = await ensurePdfJs();
+    const data = new Uint8Array(await file.arrayBuffer());
+    pdfDoc = await pdfjsLib.getDocument({ data }).promise;
 
-  orgPages.addEventListener("dragstart", (e) => {
-    const target = e.target.closest("[draggable='true']");
-    if (!target) return;
-    dragItem = target;
-    target.classList.add("opacity-40", "scale-95", "border-emerald-400");
-    target.style.boxShadow = "0 0 20px rgba(16, 185, 129, 0.4)";
+    ctrlOrg.classList.remove("hidden");
+    orgStatus.textContent = "Loaded " + pdfDoc.numPages + " page(s). Drag to reorder, or use the arrow controls.";
+
+    for (let pageNumber = 1; pageNumber <= pdfDoc.numPages; pageNumber++) {
+      orgStatus.textContent = "Preparing page previews · " + pageNumber + " / " + pdfDoc.numPages;
+      const page = await pdfDoc.getPage(pageNumber);
+      const base = page.getViewport({ scale: 1 });
+      const scale = Math.min(0.32, 180 / base.width, 240 / base.height);
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.ceil(viewport.width));
+      canvas.height = Math.max(1, Math.ceil(viewport.height));
+
+      const context = canvas.getContext("2d", { alpha: false });
+      if (!context) throw new Error("Could not render a page preview.");
+      await page.render({ canvasContext: context, viewport }).promise;
+      page.cleanup?.();
+
+      orgPages.appendChild(createPageCard(pageNumber - 1, pageNumber, canvas));
+      await nextFrame();
+    }
+
+    renumberPages();
+    orgStatus.textContent = pdfDoc.numPages + " page(s) ready. Reorder or remove pages, then save.";
+  } catch (error) {
+    console.error("PDF load failed:", error);
+    await disposePdf();
+    orgStatus.textContent = "Could not open this PDF: " + (error?.message || "Unknown error");
+    showAlert("Could not open this PDF. It may be damaged or password-protected.", "error");
+  } finally {
+    loading = false;
+    btnOrgSave.disabled = !pdfDoc || orgPages.children.length === 0;
+    btnOrgReset.disabled = false;
+  }
+}
+
+function createPageCard(index, displayNumber, canvas) {
+  const card = document.createElement("article");
+  card.className =
+    "page-card relative overflow-hidden rounded-2xl border border-emerald-100 bg-white p-2 shadow-sm transition-shadow hover:shadow-md";
+  card.dataset.index = String(index);
+  card.draggable = true;
+
+  canvas.className = "block max-h-52 w-full rounded-lg bg-gray-50 object-contain";
+  card.appendChild(canvas);
+
+  const footer = document.createElement("div");
+  footer.className = "mt-2 flex items-center justify-between gap-2";
+  const number = document.createElement("span");
+  number.className = "page-number text-xs font-semibold text-gray-600";
+  number.textContent = "Page " + displayNumber;
+
+  const actions = document.createElement("div");
+  actions.className = "page-actions flex items-center gap-1";
+
+  const up = createActionButton("↑", "Move page up", "text-gray-600 hover:bg-emerald-50");
+  up.addEventListener("click", () => {
+    const previous = card.previousElementSibling;
+    if (previous) orgPages.insertBefore(card, previous);
+    renumberPages();
+  });
+
+  const down = createActionButton("↓", "Move page down", "text-gray-600 hover:bg-emerald-50");
+  down.addEventListener("click", () => {
+    const next = card.nextElementSibling;
+    if (next) orgPages.insertBefore(next, card);
+    renumberPages();
+  });
+
+  const remove = createActionButton("×", "Remove page", "text-rose-600 hover:bg-rose-50");
+  remove.addEventListener("click", () => {
+    card.remove();
+    canvas.width = canvas.height = 0;
+    renumberPages();
+  });
+
+  actions.append(up, down, remove);
+  footer.append(number, actions);
+  card.appendChild(footer);
+  return card;
+}
+
+function createActionButton(label, ariaLabel, extraClass) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = label;
+  button.setAttribute("aria-label", ariaLabel);
+  button.title = ariaLabel;
+  button.className =
+    "flex h-8 w-8 items-center justify-center rounded-lg text-base font-semibold transition-colors " + extraClass;
+  return button;
+}
+
+function setupReordering() {
+  // These delegated listeners are registered once, not once per PDF load.
+  orgPages.addEventListener("dragstart", event => {
+    const card = event.target.closest(".page-card");
+    if (!card) return;
+    draggedPage = card;
+    card.classList.add("opacity-50");
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", card.dataset.index || "");
+    }
+  });
+
+  orgPages.addEventListener("dragover", event => {
+    if (!draggedPage) return;
+    event.preventDefault();
+    const target = event.target.closest(".page-card");
+    if (!target || target === draggedPage) return;
+
+    const rect = target.getBoundingClientRect();
+    const before = event.clientY < rect.top + rect.height / 2;
+    orgPages.insertBefore(draggedPage, before ? target : target.nextElementSibling);
+  });
+
+  orgPages.addEventListener("drop", event => {
+    if (draggedPage) event.preventDefault();
   });
 
   orgPages.addEventListener("dragend", () => {
-    if (dragItem) {
-      dragItem.classList.remove("opacity-40", "scale-95", "border-emerald-400");
-      dragItem.style.boxShadow = "";
-    }
-    placeholder.remove();
-    dragItem = null;
-    updatePageOrder();
-  });
-
-  orgPages.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    const target = e.target.closest("[draggable='true']");
-    if (!target || target === dragItem) return;
-
-    const rect = target.getBoundingClientRect();
-    const midY = rect.top + rect.height / 2;
-    if (e.clientY < midY) orgPages.insertBefore(placeholder, target);
-    else orgPages.insertBefore(placeholder, target.nextSibling);
-  });
-
-  orgPages.addEventListener("drop", (e) => {
-    e.preventDefault();
-    if (dragItem && placeholder.parentNode) {
-      orgPages.insertBefore(dragItem, placeholder);
-      placeholder.remove();
-      updatePageOrder();
-    }
+    draggedPage?.classList.remove("opacity-50");
+    draggedPage = null;
+    renumberPages();
   });
 }
 
-function updatePageOrder() {
-  pages = Array.from(orgPages.children).filter((el) => el.dataset.index);
-  pages.forEach((el, i) => {
-    const num = el.querySelector("div:last-child");
-    if (num) num.textContent = i + 1;
+function renumberPages() {
+  const cards = Array.from(orgPages.querySelectorAll(".page-card"));
+  cards.forEach((card, index) => {
+    const label = card.querySelector(".page-number");
+    if (label) label.textContent = "Page " + (index + 1);
+    const up = card.querySelector('button[aria-label="Move page up"]');
+    const down = card.querySelector('button[aria-label="Move page down"]');
+    if (up) up.disabled = index === 0;
+    if (down) down.disabled = index === cards.length - 1;
   });
+
+  btnOrgSave.disabled = loading || saving || cards.length === 0 || !pdfDoc;
+  if (cards.length === 0 && pdfDoc) {
+    orgStatus.textContent = "All pages removed. Add a page back or reset to load the PDF again.";
+  }
 }
 
-// === Save Organized PDF ===
-btnOrgSave.addEventListener("click", async () => {
-if (!pdfDoc) return showAlert("Load a PDF first.", "warning");
-  orgStatus.innerHTML = `<div class='text-blue-600 font-medium animate-pulse'>💾 Creating organized PDF...</div>`;
-  btnOrgSave.disabled = true;
-  btnOrgSave.textContent = "Saving...";
+async function saveOrganizedPdf() {
+  if (!pdfDoc || saving) return;
+  const order = Array.from(orgPages.querySelectorAll(".page-card"))
+    .map(card => Number.parseInt(card.dataset.index, 10))
+    .filter(Number.isInteger);
 
-  const { PDFDocument } = window.PDFLib;
-  const newPdf = await PDFDocument.create();
-  const oldPdf = await PDFDocument.load(await pdfDoc.getData());
-
-  const order = Array.from(orgPages.children)
-    .filter((div) => div.dataset.index)
-    .map((div) => parseInt(div.dataset.index));
-
-  for (const idx of order) {
-    const [page] = await newPdf.copyPages(oldPdf, [idx]);
-    newPdf.addPage(page);
+  if (!order.length) {
+    showAlert("Keep at least one page in the PDF.", "warning");
+    return;
   }
 
-  const pdfBytes = await newPdf.save();
-  const blob = new Blob([pdfBytes], { type: "application/pdf" });
-  const url = URL.createObjectURL(blob);
+  saving = true;
+  btnOrgSave.disabled = true;
+  btnOrgReset.disabled = true;
+  orgStatus.textContent = "Building your organized PDF…";
 
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `Organized_${Date.now()}.pdf`;
-  a.click();
-  URL.revokeObjectURL(url);
+  let url = null;
+  try {
+    const { PDFDocument } = await ensurePdfLib();
+    const original = await PDFDocument.load(await pdfDoc.getData());
+    const output = await PDFDocument.create();
 
-  orgStatus.innerHTML = `<div class='text-emerald-700 font-semibold'>✅ PDF saved successfully!</div>`;
-  btnOrgSave.disabled = false;
-  btnOrgSave.textContent = "💾 Save PDF";
-});
+    for (const pageIndex of order) {
+      const [page] = await output.copyPages(original, [pageIndex]);
+      output.addPage(page);
+      await nextFrame();
+    }
 
-// === Reset ===
-btnOrgReset.addEventListener("click", () => {
+    const bytes = await output.save({ useObjectStreams: true });
+    const blob = new Blob([bytes], { type: "application/pdf" });
+    url = URL.createObjectURL(blob);
+
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "Organized_" + Date.now() + ".pdf";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+
+    orgStatus.textContent =
+      "Saved successfully · " + order.length + " page(s) · " +
+      (blob.size / 1024 / 1024).toFixed(2) + " MB";
+    showAlert("Organized PDF downloaded.", "success");
+  } catch (error) {
+    console.error("PDF save failed:", error);
+    orgStatus.textContent = "Could not save PDF: " + (error?.message || "Unknown error");
+    showAlert("Could not save the organized PDF.", "error");
+  } finally {
+    if (url) setTimeout(() => URL.revokeObjectURL(url), 15000);
+    saving = false;
+    btnOrgSave.disabled = !pdfDoc || order.length === 0;
+    btnOrgReset.disabled = false;
+  }
+}
+
+async function resetOrganizer() {
+  if (loading || saving) return;
   inpOrg.value = "";
-  ctrlOrg.classList.add("hidden");
+  orgPages.querySelectorAll("canvas").forEach(canvas => {
+    canvas.width = canvas.height = 0;
+  });
   orgPages.innerHTML = "";
-  orgStatus.innerHTML = `<div class='text-gray-600 font-medium'>🔄 Reset complete.</div>`;
+  ctrlOrg.classList.add("hidden");
+  orgStatus.textContent = "";
+  await disposePdf();
+  btnOrgSave.disabled = true;
+}
+
+async function disposePdf() {
+  if (!pdfDoc) return;
+  const oldDocument = pdfDoc;
   pdfDoc = null;
-  pages = [];
-});
+  try {
+    await oldDocument.destroy();
+  } catch (error) {
+    console.warn("PDF cleanup warning:", error);
+  }
+}
