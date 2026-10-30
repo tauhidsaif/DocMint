@@ -47,7 +47,7 @@ async function loadSelectedPdf() {
   btnOrgSave.disabled = true;
   btnOrgReset.disabled = true;
   ctrlOrg.classList.add("hidden");
-  orgPages.innerHTML = "";
+  clearPagePreviews();
   await disposePdf();
 
   try {
@@ -83,13 +83,10 @@ async function loadSelectedPdf() {
   } catch (error) {
     console.error("PDF load failed:", error);
     await disposePdf();
-    orgPages.querySelectorAll("canvas").forEach(canvas => {
-      canvas.width = canvas.height = 0;
-    });
-    orgPages.innerHTML = "";
+    clearPagePreviews();
     ctrlOrg.classList.add("hidden");
     orgStatus.textContent = "Could not open this PDF: " + (error?.message || "Unknown error");
-    showAlert("Could not open this PDF. It may be damaged or password-protected.", "error");
+    showAlert(error?.message || "Could not open this PDF.", "error");
   } finally {
     loading = false;
     inpOrg.disabled = false;
@@ -175,7 +172,11 @@ function setupReordering() {
     if (!target || target === draggedPage) return;
 
     const rect = target.getBoundingClientRect();
-    const before = event.clientY < rect.top + rect.height / 2;
+    const verticalMidpoint = rect.top + rect.height / 2;
+    const horizontalMidpoint = rect.left + rect.width / 2;
+    const before = event.clientY < verticalMidpoint ||
+      (Math.abs(event.clientY - verticalMidpoint) < rect.height * 0.15 &&
+       event.clientX < horizontalMidpoint);
     orgPages.insertBefore(draggedPage, before ? target : target.nextElementSibling);
   });
 
@@ -270,13 +271,17 @@ async function saveOrganizedPdf() {
   }
 }
 
-async function resetOrganizer() {
-  if (loading || saving) return;
-  inpOrg.value = "";
+function clearPagePreviews() {
   orgPages.querySelectorAll("canvas").forEach(canvas => {
     canvas.width = canvas.height = 0;
   });
   orgPages.innerHTML = "";
+}
+
+async function resetOrganizer() {
+  if (loading || saving) return;
+  inpOrg.value = "";
+  clearPagePreviews();
   ctrlOrg.classList.add("hidden");
   orgStatus.textContent = "";
   await disposePdf();
