@@ -130,6 +130,9 @@ if (!dzPdf || !inpPdf) {
     if (!pdfGenerated.length) return;
 
     btnPdfZip.disabled = true;
+    btnPdfConvert.disabled = true;
+    btnPdfReset.disabled = true;
+    inpPdf.disabled = true;
     try {
       pdfStatus.textContent = "Loading ZIP tools…";
       const JSZip = await ensureJsZip();
@@ -153,6 +156,9 @@ if (!dzPdf || !inpPdf) {
       showAlert("Could not create the ZIP file.", "error");
     } finally {
       btnPdfZip.disabled = pdfGenerated.length === 0;
+      btnPdfConvert.disabled = false;
+      btnPdfReset.disabled = false;
+      inpPdf.disabled = false;
     }
   });
 }
