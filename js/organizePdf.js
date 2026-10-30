@@ -43,6 +43,7 @@ async function loadSelectedPdf() {
   }
 
   loading = true;
+  inpOrg.disabled = true;
   btnOrgSave.disabled = true;
   btnOrgReset.disabled = true;
   ctrlOrg.classList.add("hidden");
@@ -86,6 +87,7 @@ async function loadSelectedPdf() {
     showAlert("Could not open this PDF. It may be damaged or password-protected.", "error");
   } finally {
     loading = false;
+    inpOrg.disabled = false;
     btnOrgSave.disabled = !pdfDoc || orgPages.children.length === 0;
     btnOrgReset.disabled = false;
   }
