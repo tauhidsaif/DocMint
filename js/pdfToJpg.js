@@ -113,7 +113,7 @@ if (!dzPdf || !inpPdf) {
       console.error("PDF to JPG conversion failed:", error);
       btnPdfZip.disabled = pdfGenerated.length === 0;
       pdfStatus.textContent = "Conversion failed: " + (error?.message || "Unknown error");
-      showAlert("Could not convert this PDF. Try a smaller PDF or another file.", "error");
+      showAlert(error?.message || "Could not convert this PDF.", "error");
     } finally {
       try {
         await documentProxy?.destroy?.();
